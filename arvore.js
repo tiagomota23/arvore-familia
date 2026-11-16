@@ -144,6 +144,7 @@ function init(){
   }
   if(!location.hash)history.replaceState(null,'','#arvore');
   applyEgo();initEgo();
+  CUR=EGO;
   try{const s=JSON.parse(localStorage.getItem('arv-filtros')||'{}');for(const k in s){const el=$('#'+k);if(el){el.type==='checkbox'?el.checked=s[k]:el.value=s[k]}}}catch(e){}
   for(const id of ['q','fnot','fsl','fpend','fest','fcat','framo','fgen'])$('#'+id).addEventListener('input',list);
   window.addEventListener('hashchange',route);
@@ -454,11 +455,13 @@ function tbox(id,cls,tk){
   const q=id!==undefined&&id!==null?BY[id]:null;
   const k=tk?` data-tk="${tk}"`:'';
   if(!q)return `<div class="tb empty"${k}>—</div>`;
-  return `<div class="tb ${cls||''} sx-${esc(q.s||'')}"${k}><button class="tn" data-go="${esc(q.id)}">${esc(q.n)}</button><small>${q.nb?'n. '+esc(q.nb):'n. ?'}${q.nm?' · † '+esc(q.nm):''}</small><small>${esc(q.pr||'')}</small>${cls==='root'||!GESTOR?'':`<button class="ta" data-anc="${esc(q.id)}">⚓ ancorar aqui</button>`}</div>`;
+  return `<div class="tb ${cls||''} sx-${esc(q.s||'')}"${k}><button class="tn" data-go="${esc(q.id)}">${esc(q.n)}</button><small>${q.nb?'n. '+esc(q.nb):'n. ?'}${q.nm?' · † '+esc(q.nm):''}</small><small>${esc(q.pr||'')}</small>${cls==='root'?`<button class="ta" data-go="${esc(q.id)}">abrir a ficha</button>`:!GESTOR?'':`<button class="ta" data-anc="${esc(q.id)}">⚓ ancorar aqui</button>`}</div>`;
 }
 let TREE_RO=null;
 function renderTree(){
-  const A=ancA(),a=BY[A];if(!a){$('#main').innerHTML='<div class="empty">Âncora não encontrada.</div>';return}
+  // centro: o perfil ativo (a ficha aberta); a âncora só define o título, o âmbito e os parentescos
+  if(!BY[CUR]||BY[CUR].del)CUR=ancA();
+  const A=BY[CUR]?BY[CUR].id:ancA(),a=BY[A];if(!a){$('#main').innerHTML='<div class="empty">Pessoa não encontrada.</div>';return}
   const pais=i=>{const L=kPa(i).map(x=>BY[x]).filter(Boolean);const f=L.find(x=>x.s==='M'),m=L.find(x=>x.s==='F');const r=[f,m];for(const x of L)if(x!==f&&x!==m)r[r.indexOf(undefined)]=x;return r.map(x=>x?x.id:null)};
   const rows=[];let lvl=[A];
   for(let k=1;k<=3;k++){lvl=lvl.flatMap(i=>i===null?[null,null]:pais(i));if(lvl.every(x=>x===null))break;rows.push(lvl)}
@@ -471,11 +474,12 @@ function renderTree(){
   // uma geração por linha: filhos (com os cônjuges) numa linha, netos na linha de baixo, cada grupo por baixo dos pais
   const kids=fl.map((c,i)=>`<div class="tunit" style="grid-row:1;grid-column:${i+1}">${tbox(c,'',`c${i}`)}${kCj(c).map((s,j)=>tbox(s,'',`c${i}s${j}`)).join('')}</div>`).join('')
     +(ng?`<div class="tlab" style="grid-row:2">Netos (${ng})</div>`+fl.map((c,i)=>`<div class="tgk" style="grid-row:3;grid-column:${i+1}">${kFl(c).map((g,j)=>tbox(g,'',`g${i}_${j}`)).join('')}</div>`).join(''):'');
-  $('#main').innerHTML=`<div class="sec"><h2>Árvore de ${esc(a.n)}</h2><div class="muted">Antepassados para cima, descendentes para baixo. ${!GESTOR?'Toque num nome para abrir a ficha.':ANCORA!==null?`Âncora escolhida; <button class="linkbtn" id="ancreset2">repor</button>. O âmbito, a geração e o ramo de toda a árvore são calculados a partir desta pessoa.`:'Âncora por omissão (quem sou eu). O âmbito, a geração e o ramo de toda a árvore são calculados a partir desta pessoa.'}</div></div>
+  $('#main').innerHTML=`<div class="sec"><h2>Árvore de ${esc(a.n)}</h2><div class="muted">Antepassados para cima, descendentes para baixo. Toque num nome para o pôr no centro (passa a ser o perfil ativo); toque na pessoa do centro para abrir a ficha.${GESTOR?(ANCORA!==null?` Âncora: ${esc(BY[ANCORA]?.n||'')} (<button class="linkbtn" id="ancreset2">repor</button>); define o título, o âmbito, a geração e o ramo.`:' Âncora por omissão (quem sou eu); define o título, o âmbito, a geração e o ramo.'):''}</div></div>
    <div class="tree"><div class="tin" id="tin"><svg id="tsvg" aria-hidden="true"></svg>${up}
-   <div class="tgrp"><div class="tlab">Âncora${sps.length?' e cônjuge':''}</div><div class="tcenter">${tbox(A,'root','r')}${sps.map((s,i)=>tbox(s,'',`s${i}`)).join('')}</div></div>
+   <div class="tgrp"><div class="tlab">Perfil ativo${sps.length?' e cônjuge':''}</div><div class="tcenter">${tbox(A,'root','r')}${sps.map((s,i)=>tbox(s,'',`s${i}`)).join('')}</div></div>
    <div class="tgrp"><div class="tlab">Filhos (${fl.length})</div>${fl.length?`<div class="tkids" style="grid-template-columns:repeat(${fl.length},auto)">${kids}</div>`:'<span class="muted">—</span>'}</div></div></div>`;
-  $('#main').querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>go(b.dataset.go));
+  // clicar num nome muda o perfil ativo e recentra a árvore; clicar no centro abre a ficha
+  $('#main').querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>{const p=BY[b.dataset.go];if(!p)return;if(p.id===A){go(p.id);return}CUR=p.id;document.querySelectorAll('.row').forEach(r=>r.setAttribute('aria-current',r.dataset.id==String(p.id)));renderTree()});
   // mudar a âncora aqui não sai da vista árvore: o endereço fica sempre em #arvore
   const stay=id=>{if(location.hash==='#arvore')setAnchor(id);else{setAnchor(id,true);location.hash='arvore'}};
   $('#main').querySelectorAll('[data-anc]').forEach(b=>b.onclick=()=>stay(BY[b.dataset.anc].id));
