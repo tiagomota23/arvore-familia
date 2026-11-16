@@ -64,6 +64,11 @@ Se o gestor mudar uma resposta, ela volta a «por registar».
 
 Sem domínio verificado no Resend, o remetente de teste só entrega ao dono da conta Resend — chega para o gestor.
 
+Teste do email (só com a chave service_role; devolve a resposta do Resend e envia «Árvore: teste de email» ao gestor):
+```bash
+K=$(security find-generic-password -s arvore-familia-service-role -w); curl -s -X POST https://khuybebmdnzttexjdngf.supabase.co/functions/v1/notify -H "apikey: $K" -H "Authorization: Bearer $K" -H 'Content-Type: application/json' -d '{"type":"teste"}'
+```
+
 ## Modo de demonstração (localhost)
 ```bash
 python3 tools/exportar.py
