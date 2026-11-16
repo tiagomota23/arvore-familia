@@ -54,6 +54,14 @@ Deno.serve(async (req) => {
   try { b = await req.json(); } catch (_) { /* sem corpo */ }
   try {
     if (b.type === 'pedido') return await onPedido(req);
+    // teste do envio, só com a chave service_role (tools/ ou o Tiago): devolve a resposta do Resend
+    if (b.type === 'teste') {
+      if ((req.headers.get('authorization') || '') !== `Bearer ${SK}`) return json({ error: 'só service_role' }, 403);
+      const gestores = (await rest('membros?papel=eq.gestor&select=email')).map((x: { email: string }) => x.email);
+      const r = await fetch('https://api.resend.com/emails', { method: 'POST', headers: { Authorization: `Bearer ${RESEND}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ from: FROM, to: gestores, subject: 'Árvore: teste de email', html: '<p>Teste do envio de emails da Árvore da Família.</p>' }) });
+      return json({ status: r.status, resposta: (await r.text()).slice(0, 400), chave: { comprimento: (RESEND || '').length, re_: (RESEND || '').startsWith('re_'), espacos: /\s/.test(RESEND || '') }, para: gestores });
+    }
     return json({ error: 'tipo desconhecido' }, 400);
   } catch (e) {
     return json({ error: String((e as Error).message || e) }, 500);
