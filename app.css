@@ -1,0 +1,23 @@
+/* Webapp: entrada, conta, gestão. O resto do estilo vem do artifact (styles.css). */
+[hidden]{display:none!important}
+body:not(.gestor) .g-only{display:none!important}
+.gate{min-height:100vh;min-height:100dvh;display:flex;align-items:center;justify-content:center}
+.gate-box{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:32px 24px;max-width:420px;width:100%;text-align:center;display:flex;flex-direction:column;gap:16px;align-items:center}
+.gate-box h1{font-size:1.8rem;color:var(--accent)}
+.google-btn{display:inline-flex;align-items:center;gap:10px;background:#fff;color:#1f1f1f;border:1px solid #dadce0;border-radius:999px;padding:10px 20px;font-weight:500;cursor:pointer}
+.google-btn svg{width:20px;height:20px}
+.gate-msg{margin:0;color:var(--ink);min-height:1.5em}
+.gate-note{margin:0;font-size:.8rem;color:var(--muted)}
+.conta{font-size:.8rem;display:flex;gap:8px;align-items:center;justify-content:flex-end;flex-wrap:wrap}
+#egoq[readonly]{cursor:default}
+.gq{display:flex;flex-direction:column;gap:10px}
+.gi{border:1px solid var(--line);border-radius:8px;padding:10px 12px;display:flex;flex-direction:column;gap:8px;background:var(--panel)}
+.gbtns{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.gpick .pk{margin-bottom:6px}
+.pick{position:relative;max-width:420px}
+.pick input,.ginv input{width:100%;padding:6px 10px;border:1px solid var(--line);border-radius:6px;background:var(--panel)}
+.ginv{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) auto;gap:8px;margin:10px 0;align-items:start}
+@media (max-width:700px){.ginv{grid-template-columns:1fr}}
+.invout{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.invout input{flex:1 1 260px;font-family:var(--f-mono);font-size:.78rem;padding:6px 8px;border:1px solid var(--line);border-radius:6px;background:var(--bg)}
+.gt{margin-top:10px}

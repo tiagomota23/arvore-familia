@@ -1,0 +1,8 @@
+# Dados da árvore: NUNCA no repositório (pessoas vivas). Ficam no Supabase, com RLS.
+export/
+demo/
+*.json.gz
+.env*
+.DS_Store
+supabase/.temp/
+.claude/

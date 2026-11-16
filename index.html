@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https://*.supabase.co; connect-src 'self' https://*.supabase.co wss://*.supabase.co; worker-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<meta name="robots" content="noindex, nofollow">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#23614a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Árvore">
+<title>Árvore da Família</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Literata:opsz,wght@7..72,500;7..72,650&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="styles.css?v=2">
+<link rel="stylesheet" href="app.css?v=2">
+</head>
+<body>
+<!-- Entrada (Google) e estados de acesso -->
+<section id="view-login" class="gate" hidden>
+  <div class="gate-box">
+    <h1>Árvore da Família</h1>
+    <button id="btn-google" class="google-btn" type="button">
+      <svg viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9 3.5l6.7-6.7C35.6 2.4 30.2 0 24 0 14.6 0 6.6 5.4 2.7 13.3l7.8 6C12.4 13.6 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.3 5.5-4.8 7.2l7.5 5.8c4.4-4 7.1-10 7.1-17.5z"/><path fill="#FBBC05" d="M10.5 28.7A14.5 14.5 0 0 1 9.5 24c0-1.6.3-3.2.8-4.7l-7.8-6A24 24 0 0 0 0 24c0 3.9.9 7.5 2.6 10.7l7.9-6z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.5-5.8c-2.1 1.4-4.9 2.3-8.4 2.3-6.3 0-11.6-4.2-13.5-9.9l-7.9 6C6.5 42.6 14.6 48 24 48z"/></svg>
+      Entrar com Google
+    </button>
+    <p class="gate-msg" id="login-msg" aria-live="polite"></p>
+    <p class="gate-note">Acesso reservado à família, por convite. <a href="privacidade.html">Privacidade</a></p>
+  </div>
+</section>
+<section id="view-app" hidden>
+
+<header>
+  <div>
+    <div style="display:flex;flex-wrap:wrap;align-items:center;gap:10px"><h1 id="titulo">Árvore da Família</h1><a class="home" id="home" href="#p1000003" title="Ir para o perfil de quem sou eu">⌂ O meu perfil</a></div>
+    <div class="sub" id="gen">A carregar a árvore de referência…</div>
+  </div>
+  <div class="hright">
+    <div class="whoami" id="whoami">
+      <label for="egoq">Quem sou eu</label>
+      <div class="egobox"><input type="search" id="egoq" autocomplete="off" placeholder="Escolher pessoa…" aria-describedby="egonote"><div class="egosug" id="egosug" role="listbox" hidden></div></div>
+      <div class="egonote" id="egonote"></div>
+    </div>
+    <div class="ancbar" id="ancbar" hidden></div>
+    <div class="stats g-only" id="stats"></div>
+    <div class="conta" id="conta"></div>
+  </div>
+</header>
+
+<nav class="tabs" id="tabs" aria-label="Vistas"></nav>
+<div class="wrap">
+  <aside class="side" aria-label="Pesquisa">
+    <input type="search" id="q" placeholder="Nome, variante ou id (ex.: 1500450)" autocomplete="off">
+    <div class="filters">
+      <label class="chk g-only"><input type="checkbox" id="fpend"> Só com pendentes</label>
+      <label class="chk"><input type="checkbox" id="fnot"> Só notáveis</label>
+      <label class="chk g-only"><input type="checkbox" id="fsl"> Só fonte local</label>
+      <select id="fest" class="g-only" aria-label="Estado"><option value="">Qualquer pendente</option><option value="por_gravar">Por gravar</option><option value="por_decidir">À espera do Tiago</option><option value="por_validar">Por validar</option><option value="diferente_mh">Diferente do MH</option></select>
+      <select id="fcat" class="g-only" aria-label="Âmbito"><option value="">Todo o âmbito</option></select>
+      <select id="framo" aria-label="Ramo"><option value="">Todos os ramos</option></select>
+      <select id="fgen" aria-label="Geração"><option value="">Todas as gerações</option></select>
+    </div>
+    <div class="count" id="count"></div>
+    <div class="list" id="list" role="list"></div>
+    <div class="legend g-only">
+      <span class="pill s-no_mh">no MyHeritage</span><span class="pill s-por_gravar">por gravar</span>
+      <span class="pill s-por_decidir">à espera do Tiago</span><span class="pill s-por_validar">por validar</span><span class="pill s-diferente_mh">diferente do MH</span>
+    </div>
+  </aside>
+  <main class="main" id="main"><div class="empty">A carregar…</div></main>
+</div>
+
+
+</section>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js" integrity="sha384-Rj26LVGvoeRVR6+mwQmFfcR3QOBEwT+ZmuCWpuiqeTzJpCs0ER4ITAWGb4Hiy3Ok" crossorigin="anonymous"></script>
+<script src="config.js?v=2"></script>
+<script src="arvore.js?v=2"></script>
+<script src="app.js?v=2"></script>
+</body>
+</html>
