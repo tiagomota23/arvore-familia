@@ -114,6 +114,11 @@ revoke all on all tables in schema public from anon, authenticated;
 alter default privileges in schema public revoke all on tables from anon, authenticated;
 grant select on public.arvore_export to authenticated;
 grant select, insert, update on public.respostas to authenticated;
+-- service_role (exportar.py, respostas.py, função notify): necessário quando o projeto não expõe tabelas automaticamente
+grant usage on schema public to service_role;
+grant all on all tables in schema public to service_role;
+grant all on all sequences in schema public to service_role;
+alter default privileges in schema public grant all on tables to service_role;
 -- membros, convites e pedidos: só através das funções abaixo
 
 -- ---------- RPCs
