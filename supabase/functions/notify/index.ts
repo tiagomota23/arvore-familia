@@ -39,7 +39,11 @@ async function onPedido(req: Request) {
     <p style="color:#5d6b65;font-size:13px">A aprovação faz-se na app, com a sua sessão de gestor; ao aprovar escolhe (ou confirma) a pessoa-âncora.</p></div></div>`;
   const r = await fetch('https://api.resend.com/emails', { method: 'POST', headers: { Authorization: `Bearer ${RESEND}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({ from: FROM, to: gestores, subject: `Árvore: pedido de acesso de ${p.nome || p.email}${p.pessoa_id ? ' (convite)' : ''}`, html }) });
-  if (!r.ok) return json({ error: 'Resend ' + r.status + ': ' + (await r.text()).slice(0, 200) }, 502);
+  if (!r.ok) {
+    const msg = 'Resend ' + r.status + ': ' + (await r.text()).slice(0, 300);
+    console.error(msg, 'chave com', RESEND.length, 'caracteres, começa por re_:', RESEND.startsWith('re_'));
+    return json({ error: msg }, 502);
+  }
   await rest(`pedidos?id=eq.${p.id}`, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ notified_at: new Date().toISOString() }) });
   return json({ sent: true });
 }
