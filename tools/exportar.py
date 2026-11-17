@@ -47,7 +47,7 @@ def familia(d):
                    for x in p.get('dc') or [] if x.get('decisao') == 'aprovado' and x.get('estado_mh') != 'substituida'
                    and re.match(r'(?i)^\s*(not[aá]vel|prefixo)', str(x.get('campo') or ''))]
         q['nt'] = [{'k': x.get('k'), 't': x.get('t')} for x in p.get('nt') or [] if x.get('s') not in FACTO_FORA]
-        q['ig'] = [{k: x[k] for k in ('f', 'what', 'titulo', 'trans', 'box', 'fact') if k in x} for x in p.get('ig') or []]
+        q['ig'] = [{k: x[k] for k in ('f', 'what', 'titulo', 'trans', 'box', 'fact', 'neg') if k in x} for x in p.get('ig') or []]
         ft = p.get('ft') or {}
         q['ft'] = {k: ft[k] for k in ('fonte', 'url_pagina', 'licenca', 'autor', 'web') if ft.get(k)} if ft.get('web') else {}
         P.append(q)
