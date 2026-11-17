@@ -21,7 +21,8 @@ body:not(.gestor) .g-only{display:none!important}
 .invout{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
 .invout input{flex:1 1 260px;font-family:var(--f-mono);font-size:.78rem;padding:6px 8px;border:1px solid var(--line);border-radius:6px;background:var(--bg)}
 .gt{margin-top:10px}
-/* fotos de perfil nas caixas da vista Árvore (igual ao artifact): 32×40 à esquerda, sem aumentar a caixa */
-.tb.hasft{display:grid;grid-template-columns:32px minmax(0,1fr);column-gap:6px;align-items:start}
+/* fotos de perfil nas caixas da vista Árvore (igual ao artifact v76): 32×40 à esquerda, centrada; caixa 38px mais larga para o nome não partir */
+.tb.hasft{display:grid;grid-template-columns:32px minmax(0,1fr);column-gap:6px;align-items:start;width:188px}
+.tb.root.hasft{width:auto;min-width:238px}
 .tb.hasft>:not(.tft){grid-column:2}
-.tb .tft{grid-column:1;grid-row:1/span 4;align-self:center;width:32px;height:40px;object-fit:cover;border-radius:4px;display:block;background:var(--bg)}
+.tb .tft{grid-column:1;grid-row:1/span 4;align-self:center;width:32px;height:40px;object-fit:cover;object-position:50% 20%;border-radius:4px;display:block;background:var(--bg)}

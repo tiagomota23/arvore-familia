@@ -478,7 +478,7 @@ function renderTree(){
   const rows=[];let lvl=[A];
   for(let k=1;k<=3;k++){lvl=lvl.flatMap(i=>i===null?[null,null]:pais(i));if(lvl.every(x=>x===null))break;rows.push(lvl)}
   const LBLG=['Pais','Avós','Bisavós'];
-  const CELL=160,W=rows.length?CELL*rows[rows.length-1].length:0;
+  const CELL=200,W=rows.length?CELL*rows[rows.length-1].length:0;
   // cada geração ocupa a mesma largura: os pais ficam centrados por cima do filho
   const up=rows.map((r,k)=>`<div class="tgrp"><div class="tlab">${LBLG[k]}</div><div class="trow" style="width:${W}px;grid-template-columns:repeat(${r.length},1fr)">${r.map((i,j)=>{const ch=k?rows[k-1][j>>1]:A;return ch===null?'<div></div>':tbox(i,'',`a${k}_${j}`)}).join('')}</div></div>`).reverse().join('');
   const sps=kCj(A),fl=kFl(A);
