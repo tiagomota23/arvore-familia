@@ -447,7 +447,7 @@ function boldPessoa(txt,p,main,what){
     if(!ok){k=e;continue}
     let end=W[e].j;{const m=txt.slice(end).match(/^\s*\(\d+\)/);if(m)end+=m[0].length}
     // estende ao aposto que se segue («, ferreiro, natural de…») até ao fim da oração
-    if(txt[end]===','){const rest=txt.slice(end);const m=rest.search(main?/;|\.(?=\s+[A-ZÀ-Ú«]|\s*$)|»|, e (?:de|da|do|a|o) |, filh|, net[oa]|, os quaes|, e ella|, e elle|\(continua/:/;|, (?:e que )?nasc|, foi bapti|, bapti|, falec|\.(?=\s+[A-ZÀ-Ú«]|\s*$)|»|, e (?:de|da|do|a|o) |, filh|, net[oa]|, os quaes|, e ella|, e elle|\(continua/);
+    if(txt[end]===','){const rest=txt.slice(end);const m=rest.search(main?/;|\.(?=\s+[A-ZÀ-Ú«]|\s*$)|»|, e (?:de|da|do|a|o) |, filh|, net[oa]|, os quaes|, «|,? (?:ambos|ambas|todos|todas)\b|, e ella|, e elle|\(continua/:/;|, (?:e que )?nasc|, foi bapti|, bapti|, falec|\.(?=\s+[A-ZÀ-Ú«]|\s*$)|»|, e (?:de|da|do|a|o) |, filh|, net[oa]|, os quaes|, «|,? (?:ambos|ambas|todos|todas)\b|, e ella|, e elle|\(continua/);
       const lim=m<0?Math.min(rest.length,160):Math.min(m,200);if(lim>1)end+=lim}
     // e para trás: «um indivíduo do sexo masculino a quem dei o nome de …» também é sobre a pessoa
     let ini=W[k].i;{const m=txt.slice(Math.max(0,ini-160),ini).match(/(?:um|uma)\s+ind[ií]v[ií]du[oa]\b[^.;»«]*?(?:o\s+nome\s+de|nome)\s*$/i);if(m)ini-=m[0].length}
