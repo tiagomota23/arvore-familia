@@ -465,7 +465,9 @@ function tbox(id,cls,tk){
   const q=id!==undefined&&id!==null?BY[id]:null;
   const k=tk?` data-tk="${tk}"`:'';
   if(!q)return `<div class="tb empty"${k}>—</div>`;
-  return `<div class="tb ${cls||''} sx-${esc(q.s||'')}"${k}><button class="tn" data-go="${esc(q.id)}">${esc(q.n)}</button><small>${q.nb?'n. '+esc(q.nb):'n. ?'}${q.nm?' · † '+esc(q.nm):''}</small><small>${esc(q.pr||'')}</small>${cls==='root'?`<button class="ta" data-go="${esc(q.id)}">abrir a ficha</button>`:!GESTOR?'':`<button class="ta" data-anc="${esc(q.id)}">⚓ ancorar aqui</button>`}</div>`;
+  // foto de perfil: miniatura fixa à esquerda (32×40), só quando existe; imagem privada preenchida por APP.media
+  const ft=q.ft&&q.ft.web?`<img class="tft" data-m="${esc(q.ft.web)}" alt="" loading="lazy">`:'';
+  return `<div class="tb ${cls||''}${ft?' hasft':''} sx-${esc(q.s||'')}"${k}>${ft}<button class="tn" data-go="${esc(q.id)}">${esc(q.n)}</button><small>${q.nb?'n. '+esc(q.nb):'n. ?'}${q.nm?' · † '+esc(q.nm):''}</small><small>${esc(q.pr||'')}</small>${cls==='root'?`<button class="ta" data-go="${esc(q.id)}">abrir a ficha</button>`:!GESTOR?'':`<button class="ta" data-anc="${esc(q.id)}">⚓ ancorar aqui</button>`}</div>`;
 }
 let TREE_RO=null;
 function renderTree(){
@@ -494,6 +496,7 @@ function renderTree(){
   const stay=id=>{if(location.hash==='#arvore')setAnchor(id);else{setAnchor(id,true);location.hash='arvore'}};
   $('#main').querySelectorAll('[data-anc]').forEach(b=>b.onclick=()=>stay(BY[b.dataset.anc].id));
   const r2=$('#ancreset2');if(r2)r2.onclick=()=>stay(null);
+  window.APP.media($('#main'));
   const tin=$('#tin'),draw=()=>treeLines(tin,rows,sps.length,fl.map(c=>[kCj(c).length,kFl(c).length]));
   draw();
   if(TREE_RO)TREE_RO.disconnect();
