@@ -420,6 +420,9 @@ const ntok=w=>{let t=nrm(w).replace(/º/g,'o').replace(/ª/g,'a').replace(/^d'/,
   t=t.replace(/ph/g,'f').replace(/th/g,'t').replace(/y/g,'i').replace(/z/g,'s').replace(/([a-z])\1/g,'$1').replace(/^h(?=[aeiou])/,'').replace(/qu(?=[aou])/g,'c').replace(/oel$/,'uel').replace(/terina$/,'tarina');
   return NABR[t]||t};
 function lev(a,b){if(Math.abs(a.length-b.length)>2)return 9;let r=[...Array(b.length+1).keys()];for(let i=1;i<=a.length;i++){let q=[i];for(let j=1;j<=b.length;j++)q[j]=Math.min(r[j]+1,q[j-1]+1,r[j-1]+(a[i-1]===b[j-1]?0:1));r=q}return r[b.length]}
+// nomes próprios usados na árvore (normalizados): servem para saber se a palavra antes de um nome é outro nome de pessoa
+let GIVEN=null;
+function givenSet(){if(GIVEN)return GIVEN;GIVEN=new Set(NCOMUM);for(const q of D.pessoas)for(const w of String(q.gv||'').split(/\s+/)){const t=ntok(w);if(t&&!NSTOP.has(t))GIVEN.add(t)}return GIVEN}
 function boldPessoa(txt,p,main,what){
   const T=new Set();
   for(const n of [p.n,...(p.nv||[]).map(x=>x.v)])for(const w of String(n||'').split(/[\s,()]+/)){const t=ntok(w);if(t&&!NSTOP.has(t))T.add(t)}
@@ -435,6 +438,10 @@ function boldPessoa(txt,p,main,what){
       if(has(W[e+1].t)){e++;got.push(has(W[e].t));continue}
       if(NSTOP.has(W[e+1].t)&&e+2<W.length&&has(W[e+2].t)&&/^\s+$/.test(txt.slice(W[e+1].j,W[e+2].i))){e+=2;got.push(has(W[e].t));continue}
       break}
+    // nome dentro de um nome mais longo de outra pessoa («Lúcio António de Sousa Campos»): a palavra anterior, com maiúscula, não é desta pessoa
+    if(k>0&&/^\s+$/.test(txt.slice(W[k-1].j,W[k].i))&&/^[A-ZÁÀÂÃÉÊÍÓÔÕÚÇ]/.test(txt.slice(W[k-1].i))&&!NSTOP.has(W[k-1].t)&&!has(W[k-1].t)&&givenSet().has(W[k-1].t)){k=e;continue}
+    // e o simétrico, só para um nome próprio comum sozinho: «neto de António Joaquim…» é outra pessoa
+    if(got.length===1&&NCOMUM.has(got[0])&&e+1<W.length&&/^\s+$/.test(txt.slice(W[e].j,W[e+1].i))&&/^[A-ZÁÀÂÃÉÊÍÓÔÕÚÇ]/.test(txt.slice(W[e+1].i))&&!NSTOP.has(W[e+1].t)&&!has(W[e+1].t)){k=e;continue}
     // nome próprio comum sozinho («Maria», «Catherina») só conta se a pessoa é a protagonista do assento, e só a 1.ª vez
     const ok=got.includes(first)&&(got.length>=2||!NCOMUM.has(first)||(main&&!usedMain&&(usedMain=true)));
     if(!ok){k=e;continue}
