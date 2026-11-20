@@ -421,7 +421,8 @@ const ntok=w=>{let t=nrm(w).replace(/º/g,'o').replace(/ª/g,'a').replace(/^d'/,
   return NABR[t]||t};
 function lev(a,b){if(Math.abs(a.length-b.length)>2)return 9;let r=[...Array(b.length+1).keys()];for(let i=1;i<=a.length;i++){let q=[i];for(let j=1;j<=b.length;j++)q[j]=Math.min(r[j]+1,q[j-1]+1,r[j-1]+(a[i-1]===b[j-1]?0:1));r=q}return r[b.length]}
 // negrito anotado à mão por pessoa e por imagem (campo «neg» do build): trechos exatos; ['∅'] = nada; a 1.ª linha (fonte) nunca fica a negrito
-function boldNeg(txt,L){const sp=[],i0=Math.max(0,txt.indexOf('\n'));for(const f of L){if(!f||f==='∅')continue;let i=i0;while((i=txt.indexOf(f,i))>=0){if(!sp.some(([a,b])=>i<b&&i+f.length>a))sp.push([i,i+f.length]);i+=f.length}}
+function boldNeg(txt,L,X){const sp=[],ex=[],i0=Math.max(0,txt.indexOf('\n'));for(const f of X||[]){if(!f)continue;let i=i0;while((i=txt.indexOf(f,i))>=0){ex.push([i,i+f.length]);i+=f.length}}
+  for(const f of L){if(!f||f==='∅')continue;let i=i0;while((i=txt.indexOf(f,i))>=0){if(!ex.some(([a,b])=>i>=a&&i+f.length<=b)&&!sp.some(([a,b])=>i<b&&i+f.length>a))sp.push([i,i+f.length]);i+=f.length}}
   sp.sort((a,b)=>a[0]-b[0]);let out='',pos=0;for(const [i,j] of sp){out+=esc(txt.slice(pos,i))+'<b>'+esc(txt.slice(i,j))+'</b>';pos=j}return out+esc(txt.slice(pos))}
 // nomes próprios usados na árvore (normalizados): servem para saber se a palavra antes de um nome é outro nome de pessoa
 let GIVEN=null;
@@ -622,7 +623,7 @@ function show(p){
     const dl=(e.dec||[]).map(x=>{const d=p.dc.find(y=>y.did===x);return d?`${esc(x)} «${esc(d.campo)}»`:esc(x)}).join(', ');
     return `<figure class="asimg"${e.dec?` data-imgdec="${esc(e.dec.join(' '))}"`:''}><a class="frame" data-mh="img/${esc(e.f)}" target="_blank" rel="noopener" title="Abrir a imagem"><img data-m="img/${esc(e.f)}" loading="lazy" alt="${esc(e.what||e.f)}">${b}</a>
       <figcaption><div><strong>${esc(e.what||e.fact||'')}</strong>${e.estado_mh?' '+(e.estado_mh==='no_mh'?'<span class="pill s-no_mh">marcação no MH</span>':'<span class="pill s-por_gravar">marcação por gravar</span>'):''}</div><div class="mono muted">${esc(e.titulo||'')} · ${esc(e.f)}</div>${dl?`<div class="muted">Ligada a ${dl}</div>`:''}</figcaption>
-      ${e.trans?`<div class="trans">${e.neg?boldNeg(e.trans,e.neg):e.dec&&!e.fact?boldPessoa(e.trans,p,false,''):boldPessoa(e.trans,p,!/—\s*(pai|mãe|av[óô]|padrinho|madrinha|testemunha|irm|ti[oa]\b|sogr|noiv|cônjuge|marido|mulher|fim|início|continua)/i.test(e.what||''),e.what)}</div>`:'<div class="muted">Sem transcrição.</div>'}</figure>`}).join('')}</div>`));
+      ${e.trans?`<div class="trans">${e.neg?boldNeg(e.trans,e.neg,e.nx):e.dec&&!e.fact?boldPessoa(e.trans,p,false,''):boldPessoa(e.trans,p,!/—\s*(pai|mãe|av[óô]|padrinho|madrinha|testemunha|irm|ti[oa]\b|sogr|noiv|cônjuge|marido|mulher|fim|início|continua)/i.test(e.what||''),e.what)}</div>`:'<div class="muted">Sem transcrição.</div>'}</figure>`}).join('')}</div>`));
   if(p.cri.length)H.push(sec('corresp',`Correspondências por aplicar no site (${p.cri.length})`,`<div class="muted">${p.cri.map(x=>`${x.a==='confirm'?'confirmar':'rejeitar'} j${x.j} (lote ${x.l})`).join(' · ')}</div>`,true));
   const ext=[];
   if(p.src.length)ext.push(`<details><summary>Fontes do perfil (${p.src.length})</summary><ul>${p.src.map(s=>`<li>${esc(s)}</li>`).join('')}</ul></details>`);
