@@ -20,7 +20,7 @@ RAIZ = Path(__file__).resolve().parent.parent
 ARVORE = Path.home() / 'Library/CloudStorage/OneDrive-Personal/Família/MyHeritage/Correspondências/arvore'
 
 # ---------- camada «familia»
-FACTO_OK = ('tipo', 'data', 'local', 'valor', 'morada', 'padrinhos', 'celebrante', 'testemunhas', 'causa', 'cotas', 'imagens_assento', 'desc', 'fontes', 'fl')
+FACTO_OK = ('tipo', 'data', 'local', 'valor', 'morada', 'padrinhos', 'celebrante', 'testemunhas', 'causa', 'cotas', 'imagens_assento', 'desc', 'fontes', 'fl', 'cit')
 FACTO_FORA = {'por_validar', 'por_decidir', 'rejeitado', 'substituida'}  # ainda não aceites ou já anulados
 
 def factos(L):
@@ -47,7 +47,9 @@ def familia(d):
                    for x in p.get('dc') or [] if x.get('decisao') == 'aprovado' and x.get('estado_mh') != 'substituida'
                    and re.match(r'(?i)^\s*(not[aá]vel|prefixo)', str(x.get('campo') or ''))]
         q['nt'] = [{'k': x.get('k'), 't': x.get('t')} for x in p.get('nt') or [] if x.get('s') not in FACTO_FORA]
-        q['ig'] = [{k: x[k] for k in ('f', 'what', 'titulo', 'trans', 'box', 'fact', 'neg', 'nx') if k in x} for x in p.get('ig') or []]
+        # D0663: imagens do AUC sem autorização — «noimg» + «cit». Até o arvore.js saber mostrar a transcrição sem imagem, ficam de fora (MOSTRA_SEM_IMG).
+        q['ig'] = [{k: x[k] for k in ('f', 'what', 'titulo', 'trans', 'box', 'fact', 'neg', 'nx', 'noimg', 'cit') if k in x} for x in p.get('ig') or []
+                   if MOSTRA_SEM_IMG or not x.get('noimg')]
         ft = p.get('ft') or {}
         q['ft'] = {k: ft[k] for k in ('fonte', 'url_pagina', 'licenca', 'autor', 'web') if ft.get(k)} if ft.get('web') else {}
         P.append(q)
@@ -55,10 +57,14 @@ def familia(d):
     return {'snap': {'ts': d.get('snap', {}).get('ts', '')}, 'resumo': {'gerado': r.get('gerado'), 'pessoas': len(P), 'familias': r.get('familias'), 'dados': {}, 'dados_total': 0, 'correspondencias': {}},
             'pessoas': P, 'apagados': [], 'filas': {'por_decidir': [], 'por_validar': []}, 'pend': {}, 'npend': 0, 'pacao': {}, 'gdec': []}
 
+SEM_IMG_PREF = ('PT-AUC-',)   # D0663 (20/11): imagens do AUC não se publicam sem autorização escrita
+MOSTRA_SEM_IMG = True           # o arvore.js mostra a transcrição das entradas «noimg» (com «cit»)
+
 def imagens(d):
     out = set()
     for p in d['pessoas']:
         for x in p.get('ig') or []:
+            if x.get('noimg') or x['f'].startswith(SEM_IMG_PREF): continue
             out.add('img/' + x['f'])
         w = (p.get('ft') or {}).get('web')
         if w:

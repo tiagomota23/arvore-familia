@@ -241,6 +241,7 @@ function fbox(f,sub){
   if(f.fr){const r=f.fr,a=[];if(r.gedcom)a.push(`${r.gedcom} citaç${r.gedcom>1?'ões':'ão'} no MyHeritage`);if(r.assento)a.push('assento');if(r.local.length)a.push('fonte local '+r.local.join(', '));
     k.push(`<div class="kv"><b>Fontes:</b> ${esc(a.join(' · '))}${f.sl?' '+slPill(f.fl):''}</div>`)}
   if(f.fl)for(const r of f.fl)k.push(`<div class="kv fl"><b class="mono">${esc(r.c)}</b>${r.pg?' '+esc(r.pg):''}${r.ti?` <span class="muted">— ${esc(r.ti)}</span>`:''}${r.ged?' <span class="muted">(citação no MyHeritage)</span>':''}${r.t?`<div class="muted">${esc(r.t)}</div>`:''}</div>`);
+  if(f.cit)k.push(`<div class="kv"><b>${esc(f.cit)}</b></div>`);
   if(f.substitui)k.push(`<div class="kv"><b>Substitui no MH:</b> ${esc(f.substitui)}</div>`);
   if(f.hist&&f.hist.length)k.push(`<div class="kv"><b>Antes (MH):</b> ${esc(f.hist.join(' → '))}</div>`);
   const det=[];
@@ -621,8 +622,8 @@ function show(p){
   if(p.ig&&p.ig.length)H.push(sec('assentos',`Imagens dos assentos (${p.ig.length})`,`<div class="gal">${p.ig.map(e=>{
     const b=e.box?`<div class="mark" style="left:${e.box[0]*100}%;top:${e.box[1]*100}%;width:${(e.box[2]-e.box[0])*100}%;height:${(e.box[3]-e.box[1])*100}%"></div>`:'';
     const dl=(e.dec||[]).map(x=>{const d=p.dc.find(y=>y.did===x);return d?`${esc(x)} «${esc(d.campo)}»`:esc(x)}).join(', ');
-    return `<figure class="asimg"${e.dec?` data-imgdec="${esc(e.dec.join(' '))}"`:''}><a class="frame" data-mh="img/${esc(e.f)}" target="_blank" rel="noopener" title="Abrir a imagem"><img data-m="img/${esc(e.f)}" loading="lazy" alt="${esc(e.what||e.f)}">${b}</a>
-      <figcaption><div><strong>${esc(e.what||e.fact||'')}</strong>${e.estado_mh?' '+(e.estado_mh==='no_mh'?'<span class="pill s-no_mh">marcação no MH</span>':'<span class="pill s-por_gravar">marcação por gravar</span>'):''}</div><div class="mono muted">${esc(e.titulo||'')} · ${esc(e.f)}</div>${dl?`<div class="muted">Ligada a ${dl}</div>`:''}</figcaption>
+    return `<figure class="asimg"${e.dec?` data-imgdec="${esc(e.dec.join(' '))}"`:''}>${e.noimg?`<div class="noimg">Imagem não publicada (sem autorização do arquivo).${e.cit?' '+esc(e.cit):''}</div>`:`<a class="frame" data-mh="img/${esc(e.f)}" target="_blank" rel="noopener" title="Abrir a imagem"><img data-m="img/${esc(e.f)}" loading="lazy" alt="${esc(e.what||e.f)}">${b}</a>`}
+      <figcaption><div><strong>${esc(e.what||e.fact||'')}</strong>${e.estado_mh?' '+(e.estado_mh==='no_mh'?'<span class="pill s-no_mh">marcação no MH</span>':'<span class="pill s-por_gravar">marcação por gravar</span>'):''}</div><div class="mono muted">${esc(e.titulo||'')} · ${esc(e.f)}</div>${e.cit?`<div class="kv"><b>${esc(e.cit)}</b></div>`:''}${dl?`<div class="muted">Ligada a ${dl}</div>`:''}</figcaption>
       ${e.trans?`<div class="trans">${e.neg?boldNeg(e.trans,e.neg,e.nx):e.dec&&!e.fact?boldPessoa(e.trans,p,false,''):boldPessoa(e.trans,p,!/—\s*(pai|mãe|av[óô]|padrinho|madrinha|testemunha|irm|ti[oa]\b|sogr|noiv|cônjuge|marido|mulher|fim|início|continua)/i.test(e.what||''),e.what)}</div>`:'<div class="muted">Sem transcrição.</div>'}</figure>`}).join('')}</div>`));
   if(p.cri.length)H.push(sec('corresp',`Correspondências por aplicar no site (${p.cri.length})`,`<div class="muted">${p.cri.map(x=>`${x.a==='confirm'?'confirmar':'rejeitar'} j${x.j} (lote ${x.l})`).join(' · ')}</div>`,true));
   const ext=[];

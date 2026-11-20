@@ -164,6 +164,7 @@ table.op td,table.op th{padding:4px 12px 4px 0;text-align:left;border-bottom:1px
 .asimg{margin:0;display:flex;flex-direction:column;gap:6px;min-width:0}
 .asimg .frame{position:relative;display:block;max-width:100%;border:1px solid var(--line);border-radius:6px;overflow:hidden;background:var(--bg)}
 .asimg img{display:block;width:100%;height:auto}
+.noimg{border:1px dashed var(--line);border-radius:6px;padding:10px 12px;color:var(--muted);font-size:.84rem;background:var(--bg)}
 .mark{position:absolute;border:3px solid var(--diff);background:color-mix(in srgb,var(--diff) 12%,transparent);border-radius:3px;pointer-events:none}
 .del,.pl.del>span:first-child{text-decoration:line-through;text-decoration-color:var(--diff)}
 .delban{background:var(--diff-bg);border:1px solid var(--diff);color:var(--ink);border-radius:8px;padding:8px 10px;margin:0 0 8px}
