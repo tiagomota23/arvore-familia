@@ -57,7 +57,7 @@ def familia(d):
     return {'snap': {'ts': d.get('snap', {}).get('ts', '')}, 'resumo': {'gerado': r.get('gerado'), 'pessoas': len(P), 'familias': r.get('familias'), 'dados': {}, 'dados_total': 0, 'correspondencias': {}},
             'pessoas': P, 'apagados': [], 'filas': {'por_decidir': [], 'por_validar': []}, 'pend': {}, 'npend': 0, 'pacao': {}, 'gdec': []}
 
-SEM_IMG_PREF = ('PT-AUC-',)   # D0663 (20/11): imagens do AUC não se publicam sem autorização escrita
+SEM_IMG_PREF = ()   # D0677 (20/11) substitui a D0663: as imagens do AUC publicam-se (uso pessoal); prefixos a não enviar, se voltar a ser preciso
 MOSTRA_SEM_IMG = True           # o arvore.js mostra a transcrição das entradas «noimg» (com «cit»)
 
 def imagens(d):
