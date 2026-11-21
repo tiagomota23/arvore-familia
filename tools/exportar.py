@@ -13,7 +13,7 @@ privado «arvore» do Supabase. Precisa da chave service_role, que nunca fica em
      security add-generic-password -a "$USER" -s arvore-familia-service-role -w   (o Tiago cola a chave)
 Uso: python3 tools/exportar.py [--arvore PASTA] [--enviar]
 """
-import argparse, hashlib, shutil, json, os, re, subprocess, sys, urllib.request, urllib.error, urllib.parse
+import argparse, base64, gzip, hashlib, shutil, json, os, re, subprocess, sys, urllib.request, urllib.error, urllib.parse
 from pathlib import Path
 
 RAIZ = Path(__file__).resolve().parent.parent
@@ -102,9 +102,11 @@ def enviar(camadas, img_dir, paths):
     for nome, dados in camadas.items():
         corpo = json.dumps(dados, ensure_ascii=False, separators=(',', ':')).encode()
         ver = hashlib.sha256(corpo).hexdigest()[:16]
-        linha = json.dumps({'camada': nome, 'versao': ver, 'gerado': dados['resumo'].get('gerado'), 'dados': dados}, ensure_ascii=False, separators=(',', ':')).encode()
+        # «dados» vai comprimido (string "gz:" + base64 de gzip): o jsonb de 8 MB dava statement timeout 57014; o app.js descomprime
+        gz = 'gz:' + base64.b64encode(gzip.compress(corpo, 6, mtime=0)).decode()
+        linha = json.dumps({'camada': nome, 'versao': ver, 'gerado': dados['resumo'].get('gerado'), 'dados': gz}, separators=(',', ':')).encode()
         pedido('POST', f'{sb}/rest/v1/arvore_export?on_conflict=camada', k, linha, extra={'Prefer': 'resolution=merge-duplicates,return=minimal'})
-        print(f'camada {nome}: {len(corpo)/1e6:.1f} MB, versão {ver}')
+        print(f'camada {nome}: {len(corpo)/1e6:.1f} MB ({len(gz)/1e6:.1f} MB comprimida), versão {ver}')
     # imagens: envia só as que faltam (lista do bucket por pasta)
     existe = set()
     for pasta in sorted({p.rsplit('/', 1)[0] for p in paths}):

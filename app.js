@@ -67,8 +67,15 @@
     if (c && c.versao === v.versao) return c.dados;
     const { data, error } = await sb.from('arvore_export').select('versao,dados').eq('camada', camada).single();
     if (error) throw error;
-    await cache.set(key, { versao: data.versao, dados: data.dados });
-    return data.dados;
+    const dados = await desembrulhar(data.dados);
+    await cache.set(key, { versao: data.versao, dados });
+    return dados;
+  }
+  // o exportar.py envia «dados» como string "gz:" + base64(gzip(JSON)) — o upsert de 8 MB em jsonb dava statement timeout (57014)
+  async function desembrulhar(d) {
+    if (typeof d !== 'string' || !d.startsWith('gz:')) return d;
+    const bin = Uint8Array.from(atob(d.slice(3)), c => c.charCodeAt(0));
+    return JSON.parse(await new Response(new Blob([bin]).stream().pipeThrough(new DecompressionStream('gzip'))).text());
   }
 
   // ---------- imagens (bucket privado «arvore», URLs assinados de 1 hora)
