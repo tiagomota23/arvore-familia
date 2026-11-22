@@ -598,13 +598,13 @@ function treeLines(tin,rows,nsp,fl,upMore,dnMore,sibs,fg,cjb,insb){
     P.push(`M${x0},${y0}V${y}`,`M${Math.min(...xs)},${y}H${Math.max(...xs)}`);for(const g of gs)P.push(`M${g.cx},${y}V${g.t}`)});
   svg.setAttribute('width',tin.scrollWidth);svg.setAttribute('height',tin.scrollHeight);
   const BT=[];
-  for(const tk of upMore||[]){const b=R(tk);if(!b)continue;BT.push(`<button type="button" class="tmbtn tm-up" data-act="up" data-tk="${tk}" style="left:${b.cx}px;top:${b.t-26}px">▲ mais ascendentes</button>`)}
-  for(const tk of dnMore||[]){const b=R(tk);if(!b)continue;BT.push(`<button type="button" class="tmbtn tm-dn" data-act="dn" data-tk="${tk}" style="left:${b.cx}px;top:${b.b+8}px">▼ mais descendentes</button>`)}
+  for(const tk of upMore||[]){const b=R(tk);if(!b)continue;BT.push(`<button type="button" class="tmbtn tm-up" data-act="up" data-tk="${tk}" style="left:${b.cx}px;top:${b.t-26}px">▲ ascendentes</button>`)}
+  for(const tk of dnMore||[]){const b=R(tk);if(!b)continue;BT.push(`<button type="button" class="tmbtn tm-dn" data-act="dn" data-tk="${tk}" style="left:${b.cx}px;top:${b.b+8}px">▼ descendentes</button>`)}
   const comCj=new Set((cjb||[]).map(z=>z[0]));
   for(const [tk,id,n] of sibs||[]){const b=R(tk);if(!b)continue;const lft=tk==='r'&&nsp>=2?R(`s${nsp%2?nsp-2:nsp-1}`):null;   // com cônjuges à esquerda da âncora, o botão fica à esquerda do mais afastado
     const dent=insb&&insb[tk];
     BT.push(dent?`<button type="button" class="tmbtn tm-sib" data-act="sib" data-tk="${tk}" data-in="1" style="transform:none;left:${b.l+7}px;top:${b.b-(comCj.has(tk)?51:27)}px" title="Mostrar os irmãos">◀ ${n}</button>`:`<button type="button" class="tmbtn tm-sib" data-act="sib" data-tk="${tk}" style="left:${(lft?lft.l:b.l)-4}px;top:${b.cy-11}px" title="Mostrar os irmãos">◀ ${n}</button>`)}
-  for(const [tk,id,lab,side] of cjb||[]){const b=R(tk);if(!b)continue;BT.push(`<button type="button" class="tmbtn tm-cj" data-act="cj" data-tk="${tk}" data-side="${side}" style="left:${b.l+7}px;top:${b.b-27}px" title="Mostrar os cônjuges">${lab}</button>`)}
+  for(const [tk,id,lab,side] of cjb||[]){const b=R(tk);if(!b)continue;BT.push(`<button type="button" class="tmbtn tm-cj" data-act="cj" data-tk="${tk}" data-side="${side}" style="left:${b.r-7}px;top:${b.b-27}px;transform:translateX(-100%)" title="Mostrar os cônjuges">${lab}</button>`)}
   svg.innerHTML=`<path d="${P.join('')}"/>`+(C.length?`<path class="cj" d="${C.join('')}"/>`:'');
   tin.querySelectorAll('.tmbtn').forEach(e=>e.remove());tin.insertAdjacentHTML('beforeend',BT.join(''));
   {const o=tin.querySelector('.sibrow');if(o){const b=tin.querySelector(`.tm-${o.dataset.kind||'sib'}[data-tk="${o.dataset.tk}"]`);if(b)b.classList.add('on')}}
