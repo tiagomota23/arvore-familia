@@ -148,6 +148,10 @@ function init(){
   try{const s=JSON.parse(localStorage.getItem('arv-filtros')||'{}');for(const k in s){const el=$('#'+k);if(el){el.type==='checkbox'?el.checked=s[k]:el.value=s[k]}}}catch(e){}
   for(const id of ['q','fnot','fsl','fpend','fest','fcat','framo','fgen'])$('#'+id).addEventListener('input',list);
   window.addEventListener('hashchange',route);
+  // «⌂ O meu perfil» (artifact v134): volta a pôr-me no centro da árvore (e o gestor repõe a âncora por omissão); na árvore, fica na árvore
+  $('#home').addEventListener('click',ev=>{CUR=EGO;
+    if(location.hash==='#arvore'){ev.preventDefault();if(GESTOR&&ANCORA!==null)setAnchor(null);else route();}
+    else if(GESTOR&&ANCORA!==null)setAnchor(null,true)});
   list();route();if(GESTOR)initDb();
 }
 let RELIVE=null;
