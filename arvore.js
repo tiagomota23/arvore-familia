@@ -478,7 +478,7 @@ function tbox(id,cls,tk){
 let TREE_RO=null;
 // irmã/irmãs só quando todos os irmãos mostrados são do sexo feminino (Tiago, 22/11)
 const irmL=(L,n)=>{const f=L.length>0&&L.every(x=>BY[x]?.s==='F');return n===1?(f?'irmã':'irmão'):(f?'irmãs':'irmãos')};
-// «irmãos»: os irmãos abrem ao lado da pessoa, que fica no mesmo sítio, com as mesmas caixas da árvore, lado a lado; não muda a âncora (Tiago, 22/11; artifact v138: também «cônjuges», kind='cj')
+// «irmãos»: os irmãos abrem ao lado da pessoa, que fica no mesmo sítio, com as mesmas caixas da árvore, lado a lado; não muda a âncora (Tiago, 22/11; artifact v142)
 function showSibs(id,tk,tin,stay,pick,kind){
   kind=kind||'sib';
   const q=BY[id],bx=tin.querySelector(`[data-tk="${tk}"]`),bt=tin.querySelector(`.tm-${kind}[data-tk="${tk}"]`);if(!q||!bx||!bt)return;
@@ -523,7 +523,9 @@ function renderTree(){
   // há mais gente para lá do que se mostra: linha tracejada para cima (pais dos bisavós) e para baixo (filhos dos netos)
   const topK=rows.length-1,upMore=rows.length&&topK===2?rows[topK].map((i,j)=>i!==null&&kPa(i).length?`a${topK}_${j}`:null).filter(Boolean):[];
   const sibs=[];{const nir=x=>x===null||x===undefined?0:(BY[x]?.ir||[]).filter(kOk).length,lbl=x=>{const L=(BY[x]?.ir||[]).filter(kOk);return `${L.length} ${irmL(L,L.length)}`};
-    if(nir(A))sibs.push(['r',A,lbl(A)]);rows.forEach((r,k)=>r.forEach((x,j)=>{if(nir(x))sibs.push([`a${k}_${j}`,x,lbl(x)])}))}
+    if(nir(A))sibs.push(['r',A,lbl(A)]);rows.forEach((r,k)=>r.forEach((x,j)=>{if(nir(x))sibs.push([`a${k}_${j}`,x,lbl(x)])}));
+    // também os cônjuges da âncora e os dos filhos (os irmãos deles não aparecem na árvore): a faixa abre para o lado de fora
+    sps.forEach((x,i)=>{if(nir(x))sibs.push([`s${i}`,x,lbl(x),i%2?'l':'r'])});fl.forEach((c,i)=>kCj(c).forEach((x,j)=>{if(nir(x))sibs.push([`c${i}s${j}`,x,lbl(x),'r'])}))}
   const dnMore=[];fl.forEach((c,i)=>kFl(c).forEach((g,j)=>{if(kFl(g).length)dnMore.push(`g${i}_${j}`)}));
   const ng=fl.reduce((n,c)=>n+kFl(c).length,0);
   // uma geração por linha: filhos (com os cônjuges) numa linha, netos na linha de baixo, cada grupo por baixo dos pais
@@ -541,7 +543,7 @@ function renderTree(){
   $('#tin').addEventListener('click',ev=>{const b=ev.target.closest('.tmbtn');if(!b)return;const m=/^(a|g)(\d+)_(\d+)$/.exec(b.dataset.tk)||[],act=b.dataset.act;let id=null;
     if(act==='up'&&m[1]==='a')id=rows[0][+m[3]>>+m[2]];
     else if(act==='dn'&&m[1]==='g')id=fl[+m[2]];
-    else if(act==='sib'){const x=b.dataset.tk==='r'?A:rows[+m[2]][+m[3]];showSibs(x,b.dataset.tk,$('#tin'),stay,pick,'sib');return}
+    else if(act==='sib'){const e=sibs.find(z=>z[0]===b.dataset.tk);if(e)showSibs(e[1],b.dataset.tk,$('#tin'),stay,pick,'sib');return}
     else if(act==='cj'){const k=b.dataset.tk;const e=cjb.find(z=>z[0]===k);if(e)showSibs(e[1],k,$('#tin'),stay,pick,'cj');return}
     if(id!==null&&id!==undefined&&BY[id])recentra(id)});
   // mudar a âncora aqui não sai da vista árvore: o endereço fica sempre em #arvore
@@ -557,7 +559,7 @@ function renderTree(){
   fl.forEach((c,i)=>{kCj(c).forEach((x,j)=>addcj(`c${i}s${j}`,x,'r'));kFl(c).forEach((g,j)=>addcj(`g${i}_${j}`,g,'r'))});
   const tin=$('#tin');tin._cjl=cjl;tin._cjo=cjo;tin._draw=()=>draw();const draw=()=>treeLines(tin,rows,sps.length,fl.map(c=>[kCj(c).length,kFl(c).length]),upMore,dnMore,sibs,fg,cjb,insb);
   // botão «irmãos» sem espaço até à caixa vizinha (fila de 200px): passa para dentro da caixa, por baixo do «ancorar aqui» (artifact v138)
-  const insb={};sibs.forEach(([tk])=>{if(tk==='r')return;const e=document.querySelector(`#tin [data-tk="${tk}"]`),row=e&&e.closest('.trow');if(!row)return;const bxs=[...row.querySelectorAll('.tb')],i=bxs.indexOf(e),prev=i>0?bxs[i-1]:null;if(!prev||e.getBoundingClientRect().left-prev.getBoundingClientRect().right<90)insb[tk]=1});
+  const insb={};sibs.forEach(([tk])=>{if(tk==='r')return;const e=document.querySelector(`#tin [data-tk="${tk}"]`),row=e&&e.closest('.trow');if(!e)return;if(!row){insb[tk]=1;return}const bxs=[...row.querySelectorAll('.tb')],i=bxs.indexOf(e),prev=i>0?bxs[i-1]:null;if(!prev||e.getBoundingClientRect().left-prev.getBoundingClientRect().right<90)insb[tk]=1});
   const dentro=new Set([...cjb.map(z=>z[0]),...Object.keys(insb)]);   // espaço dentro da caixa para os botões «irmãos»/«cônjuges»
   dentro.forEach(tk=>{const e=document.querySelector(`#tin [data-tk="${tk}"]`);if(e){e.classList.add('hascj');if(insb[tk]&&cjb.some(z=>z[0]===tk))e.classList.add('hascj2')}});
   draw();
@@ -601,9 +603,9 @@ function treeLines(tin,rows,nsp,fl,upMore,dnMore,sibs,fg,cjb,insb){
   for(const tk of upMore||[]){const b=R(tk);if(!b)continue;BT.push(`<button type="button" class="tmbtn tm-up" data-act="up" data-tk="${tk}" style="left:${b.cx}px;top:${b.t-26}px">▲ ascendentes</button>`)}
   for(const tk of dnMore||[]){const b=R(tk);if(!b)continue;BT.push(`<button type="button" class="tmbtn tm-dn" data-act="dn" data-tk="${tk}" style="left:${b.cx}px;top:${b.b+8}px">▼ descendentes</button>`)}
   const comCj=new Set((cjb||[]).map(z=>z[0]));
-  for(const [tk,id,n] of sibs||[]){const b=R(tk);if(!b)continue;const lft=tk==='r'&&nsp>=2?R(`s${nsp%2?nsp-2:nsp-1}`):null;   // com cônjuges à esquerda da âncora, o botão fica à esquerda do mais afastado
+  for(const [tk,id,n,sd] of sibs||[]){const b=R(tk);if(!b)continue;const lft=tk==='r'&&nsp>=2?R(`s${nsp%2?nsp-2:nsp-1}`):null;   // com cônjuges à esquerda da âncora, o botão fica à esquerda do mais afastado
     const dent=insb&&insb[tk];
-    BT.push(dent?`<button type="button" class="tmbtn tm-sib" data-act="sib" data-tk="${tk}" data-in="1" style="transform:none;left:${b.l+7}px;top:${b.b-(comCj.has(tk)?51:27)}px" title="Mostrar os irmãos">◀ ${n}</button>`:`<button type="button" class="tmbtn tm-sib" data-act="sib" data-tk="${tk}" style="left:${(lft?lft.l:b.l)-4}px;top:${b.cy-11}px" title="Mostrar os irmãos">◀ ${n}</button>`)}
+    BT.push(dent?`<button type="button" class="tmbtn tm-sib" data-act="sib" data-tk="${tk}" data-in="1" data-side="${sd||'l'}" style="transform:none;left:${b.l+7}px;top:${b.b-(comCj.has(tk)?51:27)}px" title="Mostrar os irmãos">◀ ${n}</button>`:`<button type="button" class="tmbtn tm-sib" data-act="sib" data-tk="${tk}" style="left:${(lft?lft.l:b.l)-4}px;top:${b.cy-11}px" title="Mostrar os irmãos">◀ ${n}</button>`)}
   for(const [tk,id,lab,side] of cjb||[]){const b=R(tk);if(!b)continue;BT.push(`<button type="button" class="tmbtn tm-cj" data-act="cj" data-tk="${tk}" data-side="${side}" style="left:${b.r-7}px;top:${b.b-27}px;transform:translateX(-100%)" title="Mostrar os cônjuges">${lab}</button>`)}
   svg.innerHTML=`<path d="${P.join('')}"/>`+(C.length?`<path class="cj" d="${C.join('')}"/>`:'');
   tin.querySelectorAll('.tmbtn').forEach(e=>e.remove());tin.insertAdjacentHTML('beforeend',BT.join(''));
