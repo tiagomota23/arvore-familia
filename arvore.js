@@ -475,7 +475,7 @@ function tbox(id,cls,tk){
   const ft=q.ft&&q.ft.web?`<img class="tft" data-m="${esc(q.ft.web)}" alt="" loading="lazy">`:'';
   return `<div class="tb ${cls||''}${ft?' hasft':''} sx-${esc(q.s||'')}"${k}>${ft}<button class="tn" data-go="${esc(q.id)}">${esc(q.n)}</button><small>${q.nb?'n. '+esc(q.nb):'n. ?'}${q.nm?' · † '+esc(q.nm):''}</small><small>${esc(q.pr||'')}</small>${cls==='root'?`<button class="ta" data-go="${esc(q.id)}">abrir a ficha</button>`:!GESTOR?'':`<button class="ta" data-anc="${esc(q.id)}">⚓ ancorar aqui</button>`}</div>`;
 }
-let TREE_RO=null,TREE_EXP=new Map(),TREE_EXP_A=null,TREE_KEEP=null;   // níveis expandidos na árvore (Tiago, 22/11)
+let TREE_RO=null,TREE_EXP=new Map(),TREE_EXP_A=null,TREE_KEEP=null,TREE_LAST_A=null;   // níveis expandidos na árvore (Tiago, 22/11)
 // irmã/irmãs só quando todos os irmãos mostrados são do sexo feminino (Tiago, 22/11)
 const irmL=(L,n)=>{const f=L.length>0&&L.every(x=>BY[x]?.s==='F');return n===1?(f?'irmã':'irmão'):(f?'irmãs':'irmãos')};
 // «irmãos»: os irmãos abrem ao lado da pessoa, que fica no mesmo sítio, com as mesmas caixas da árvore, lado a lado; não muda a âncora (Tiago, 22/11; artifact v144)
@@ -617,6 +617,9 @@ function renderTree(){
   const tr=tin.parentElement,rb=tin.querySelector('[data-tk="r"]');
   if(TREE_KEEP){tr.scrollLeft=TREE_KEEP.x;window.scrollTo(0,TREE_KEEP.y);TREE_KEEP=null}
   else if(rb&&tr.scrollWidth>tr.clientWidth)tr.scrollLeft=rb.offsetLeft+rb.offsetWidth/2-tr.clientWidth/2;
+  // nova âncora: a vista vai até ela, ao centro do ecrã (Tiago, 22/11)
+  if(TREE_LAST_A!==null&&TREE_LAST_A!==A&&rb)requestAnimationFrame(()=>rb.scrollIntoView({block:'center',inline:'center',behavior:'smooth'}));
+  TREE_LAST_A=A;
 }
 function layBands(tin){
   for(const b of tin._bands||[]){const el=tin.querySelector(`.tband[data-band="${b.id}"]`);if(!el)continue;const E=el.getBoundingClientRect();let H=0,right=-1e9;
