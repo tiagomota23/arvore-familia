@@ -48,7 +48,7 @@ def familia(d):
                    and re.match(r'(?i)^\s*(not[aá]vel|prefixo)', str(x.get('campo') or ''))]
         q['nt'] = [{'k': x.get('k'), 't': x.get('t')} for x in p.get('nt') or [] if x.get('s') not in FACTO_FORA]
         # D0663: imagens do AUC sem autorização — «noimg» + «cit». Até o arvore.js saber mostrar a transcrição sem imagem, ficam de fora (MOSTRA_SEM_IMG).
-        q['ig'] = [{k: x[k] for k in ('f', 'what', 'titulo', 'trans', 'box', 'fact', 'neg', 'nx', 'noimg', 'cit') if k in x} for x in p.get('ig') or []
+        q['ig'] = [{k: x[k] for k in ('f', 'what', 'titulo', 'trans', 'box', 'fact', 'neg', 'nx', 'noimg', 'cit', 'papel', 'auto') if k in x} for x in p.get('ig') or []
                    if MOSTRA_SEM_IMG or not x.get('noimg')]
         ft = p.get('ft') or {}
         q['ft'] = {k: ft[k] for k in ('fonte', 'url_pagina', 'licenca', 'autor', 'web') if ft.get(k)} if ft.get('web') else {}

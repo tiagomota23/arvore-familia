@@ -484,12 +484,15 @@ function renderTree(){
   // cada geração ocupa a mesma largura: os pais ficam centrados por cima do filho
   const up=rows.map((r,k)=>`<div class="tgrp"><div class="tlab">${LBLG[k]}</div><div class="trow" style="width:${W}px;grid-template-columns:repeat(${r.length},1fr)">${r.map((i,j)=>{const ch=k?rows[k-1][j>>1]:A;return ch===null?'<div></div>':tbox(i,'',`a${k}_${j}`)}).join('')}</div></div>`).reverse().join('');
   const sps=kCj(A),fl=kFl(A);
+  // há mais gente para lá do que se mostra: linha tracejada para cima (pais dos bisavós) e para baixo (filhos dos netos)
+  const topK=rows.length-1,upMore=rows.length&&topK===2?rows[topK].map((i,j)=>i!==null&&kPa(i).length?`a${topK}_${j}`:null).filter(Boolean):[];
+  const dnMore=[];fl.forEach((c,i)=>kFl(c).forEach((g,j)=>{if(kFl(g).length)dnMore.push(`g${i}_${j}`)}));
   const ng=fl.reduce((n,c)=>n+kFl(c).length,0);
   // uma geração por linha: filhos (com os cônjuges) numa linha, netos na linha de baixo, cada grupo por baixo dos pais
   const kids=fl.map((c,i)=>`<div class="tunit" style="grid-row:1;grid-column:${i+1}">${tbox(c,'',`c${i}`)}${kCj(c).map((s,j)=>tbox(s,'',`c${i}s${j}`)).join('')}</div>`).join('')
     +(ng?`<div class="tlab" style="grid-row:2">Netos (${ng})</div>`+fl.map((c,i)=>`<div class="tgk" style="grid-row:3;grid-column:${i+1}">${kFl(c).map((g,j)=>tbox(g,'',`g${i}_${j}`)).join('')}</div>`).join(''):'');
   $('#main').innerHTML=`<div class="sec"><h2>Árvore de ${esc(a.n)}</h2><div class="muted">Antepassados para cima, descendentes para baixo. Toque num nome para o pôr no centro (passa a ser o perfil ativo); toque na pessoa do centro para abrir a ficha.${GESTOR?(ANCORA!==null?` Âncora: ${esc(BY[ANCORA]?.n||'')} (<button class="linkbtn" id="ancreset2">repor</button>); define o título, o âmbito, a geração e o ramo.`:' Âncora por omissão (quem sou eu); define o título, o âmbito, a geração e o ramo.'):''}</div></div>
-   <div class="tree"><div class="tin" id="tin"><svg id="tsvg" aria-hidden="true"></svg>${up}
+   <div class="tree"><div class="tin${upMore.length?' mup':''}${dnMore.length?' mdn':''}" id="tin"><svg id="tsvg" aria-hidden="true"></svg>${up}
    <div class="tgrp"><div class="tlab">Perfil ativo${sps.length?' e cônjuge':''}</div><div class="tcenter">${tbox(A,'root','r')}${sps.map((s,i)=>tbox(s,'',`s${i}`)).join('')}</div></div>
    <div class="tgrp"><div class="tlab">Filhos (${fl.length})</div>${fl.length?`<div class="tkids" style="grid-template-columns:repeat(${fl.length},auto)">${kids}</div>`:'<span class="muted">—</span>'}</div></div></div>`;
   // clicar num nome muda o perfil ativo e recentra a árvore; clicar no centro abre a ficha
@@ -499,7 +502,7 @@ function renderTree(){
   $('#main').querySelectorAll('[data-anc]').forEach(b=>b.onclick=()=>stay(BY[b.dataset.anc].id));
   const r2=$('#ancreset2');if(r2)r2.onclick=()=>stay(null);
   window.APP.media($('#main'));
-  const tin=$('#tin'),draw=()=>treeLines(tin,rows,sps.length,fl.map(c=>[kCj(c).length,kFl(c).length]));
+  const tin=$('#tin'),draw=()=>treeLines(tin,rows,sps.length,fl.map(c=>[kCj(c).length,kFl(c).length]),upMore,dnMore);
   draw();
   if(TREE_RO)TREE_RO.disconnect();
   if(window.ResizeObserver){TREE_RO=new ResizeObserver(draw);TREE_RO.observe(tin)}
@@ -507,7 +510,7 @@ function renderTree(){
   const tr=tin.parentElement,rb=tin.querySelector('[data-tk="r"]');
   if(rb&&tr.scrollWidth>tr.clientWidth)tr.scrollLeft=rb.offsetLeft+rb.offsetWidth/2-tr.clientWidth/2;
 }
-function treeLines(tin,rows,nsp,fl){
+function treeLines(tin,rows,nsp,fl,upMore,dnMore){
   const svg=tin.querySelector('#tsvg');if(!svg||!tin.isConnected)return;
   const O=tin.getBoundingClientRect();
   const R=tk=>{const e=tin.querySelector(`[data-tk="${tk}"]`);if(!e)return null;const r=e.getBoundingClientRect();return {l:r.left-O.left,r:r.right-O.left,t:r.top-O.top,b:r.bottom-O.top,cx:(r.left+r.right)/2-O.left,cy:(r.top+r.bottom)/2-O.top,el:e}};
@@ -534,7 +537,10 @@ function treeLines(tin,rows,nsp,fl){
     const s0=ns?R(`c${i}s0`):null,x0=s0?(ck.r+s0.l)/2:ck.cx,y0=s0?ck.cy:ck.b,y=Math.min(...gs.map(g=>g.t))-11,xs=gs.map(g=>g.cx).concat([x0]);
     P.push(`M${x0},${y0}V${y}`,`M${Math.min(...xs)},${y}H${Math.max(...xs)}`);for(const g of gs)P.push(`M${g.cx},${y}V${g.t}`)});
   svg.setAttribute('width',tin.scrollWidth);svg.setAttribute('height',tin.scrollHeight);
-  svg.innerHTML=`<path d="${P.join('')}"/>`+(C.length?`<path class="cj" d="${C.join('')}"/>`:'');
+  const M=[],AW=[],TX=[];
+  for(const tk of upMore||[]){const b=R(tk);if(!b)continue;M.push(`M${b.cx},${b.t}V${b.t-26}`);AW.push(`M${b.cx},${b.t-32}l-5,8h10z`);TX.push(`<text class="mt" x="${b.cx+9}" y="${b.t-14}">mais ascendentes</text>`)}
+  for(const tk of dnMore||[]){const b=R(tk);if(!b)continue;M.push(`M${b.cx},${b.b}V${b.b+26}`);AW.push(`M${b.cx},${b.b+32}l-5,-8h10z`);TX.push(`<text class="mt" x="${b.cx+9}" y="${b.b+20}">mais descendentes</text>`)}
+  svg.innerHTML=`<path d="${P.join('')}"/>`+(C.length?`<path class="cj" d="${C.join('')}"/>`:'')+(M.length?`<path class="more" d="${M.join('')}"/><path class="arw" d="${AW.join('')}"/>${TX.join('')}`:'');
 }
 function setEgo(id){if(!GESTOR)return;EGO=id;try{localStorage.setItem('arv-ego',JSON.stringify(id))}catch(e){}applyEgo();list();route()}
 function initEgo(){
@@ -624,6 +630,7 @@ function show(p){
     const dl=(e.dec||[]).map(x=>{const d=p.dc.find(y=>y.did===x);return d?`${esc(x)} «${esc(d.campo)}»`:esc(x)}).join(', ');
     return `<figure class="asimg"${e.dec?` data-imgdec="${esc(e.dec.join(' '))}"`:''}>${e.noimg?`<div class="noimg">Imagem não publicada (sem autorização do arquivo).${e.cit?' '+esc(e.cit):''}</div>`:`<a class="frame" data-mh="img/${esc(e.f)}" target="_blank" rel="noopener" title="Abrir a imagem"><img data-m="img/${esc(e.f)}" loading="lazy" alt="${esc(e.what||e.f)}">${b}</a>`}
       <figcaption><div><strong>${esc(e.what||e.fact||'')}</strong>${e.estado_mh?' '+(e.estado_mh==='no_mh'?'<span class="pill s-no_mh">marcação no MH</span>':'<span class="pill s-por_gravar">marcação por gravar</span>'):''}</div><div class="mono muted">${esc(e.titulo||'')} · ${esc(e.f)}</div>${e.cit?`<div class="kv"><b>${esc(e.cit)}</b></div>`:''}${dl?`<div class="muted">Ligada a ${dl}</div>`:''}</figcaption>
+      ${e.papel?`<div class="kv"><b>Papel nesta transcrição:</b> ${esc(e.papel)}${e.auto?' <span class="pill s-local">negrito auto</span>':''}</div>`:''}
       ${e.trans?`<div class="trans">${e.neg?boldNeg(e.trans,e.neg,e.nx):e.dec&&!e.fact?boldPessoa(e.trans,p,false,''):boldPessoa(e.trans,p,!/—\s*(pai|mãe|av[óô]|padrinho|madrinha|testemunha|irm|ti[oa]\b|sogr|noiv|cônjuge|marido|mulher|fim|início|continua)/i.test(e.what||''),e.what)}</div>`:'<div class="muted">Sem transcrição.</div>'}</figure>`}).join('')}</div>`));
   if(p.cri.length)H.push(sec('corresp',`Correspondências por aplicar no site (${p.cri.length})`,`<div class="muted">${p.cri.map(x=>`${x.a==='confirm'?'confirmar':'rejeitar'} j${x.j} (lote ${x.l})`).join(' · ')}</div>`,true));
   const ext=[];
