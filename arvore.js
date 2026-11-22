@@ -523,7 +523,7 @@ function renderTree(){
     +(ng?`<div class="tlab" style="grid-row:2">Netos (${ng})</div>`+fl.map((c,i)=>`<div class="tgk" style="grid-row:3;grid-column:${i+1}">${kFl(c).map((g,j)=>tbox(g,'',`g${i}_${j}`)).join('')}</div>`).join(''):'');
   $('#main').innerHTML=`<div class="sec"><h2>Árvore de ${esc(a.n)}</h2><div class="muted">Antepassados para cima, descendentes para baixo. Toque num nome para o pôr no centro (passa a ser o perfil ativo); toque na pessoa do centro para abrir a ficha.${GESTOR?(ANCORA!==null?` Âncora: ${esc(BY[ANCORA]?.n||'')} (<button class="linkbtn" id="ancreset2">repor</button>); define o título, o âmbito, a geração e o ramo.`:' Âncora por omissão (quem sou eu); define o título, o âmbito, a geração e o ramo.'):''}</div></div>
    <div class="tree"><div class="tin${upMore.length?' mup':''}${dnMore.length?' mdn':''}" id="tin"><svg id="tsvg" aria-hidden="true"></svg>${up}
-   <div class="tgrp"><div class="tlab">Perfil ativo${sps.length?' e cônjuge':''}</div><div class="tcenter">${tbox(A,'root','r')}${sps.map((s,i)=>tbox(s,'',`s${i}`)).join('')}</div></div>
+   <div class="tgrp"><div class="tlab">Perfil ativo${sps.length?' e cônjuge':''}</div><div class="tcenter">${sps.map((s,i)=>i%2?tbox(s,'',`s${i}`):'').reverse().join('')}${tbox(A,'root','r')}${sps.map((s,i)=>i%2?'':tbox(s,'',`s${i}`)).join('')}</div></div>
    <div class="tgrp"><div class="tlab">Filhos (${fl.length})</div>${fl.length?`<div class="tkids" style="grid-template-columns:repeat(${fl.length},auto)">${kids}</div>`:'<span class="muted">—</span>'}</div></div></div>`;
   // clicar num nome muda o perfil ativo e recentra a árvore; clicar no centro abre a ficha
   const recentra=id=>{CUR=id;document.querySelectorAll('.row').forEach(r=>r.setAttribute('aria-current',r.dataset.id==String(id)));renderTree()};
@@ -560,7 +560,7 @@ function treeLines(tin,rows,nsp,fl,upMore,dnMore,sibs){
   rows.forEach((r,k)=>{for(let j=0;j<r.length;j+=2){const ch=R(k?`a${k-1}_${j>>1}`:'r');fam([R(`a${k}_${j}`),R(`a${k}_${j+1}`)],ch)}});
   // casamento da âncora: traço entre os cônjuges
   const rt=R('r');
-  for(let i=0;i<nsp;i++){const s=R(`s${i}`),prev=i?R(`s${i-1}`):rt;if(s&&prev)C.push(`M${prev.r},${s.cy}H${s.l}`)}
+  for(let i=0;i<nsp;i++){const s=R(`s${i}`),inn=i<2?rt:R(`s${i-2}`);if(s&&inn)C.push(i%2?`M${s.r},${s.cy}H${inn.l}`:`M${inn.r},${s.cy}H${s.l}`)}   // cônjuges dos dois lados do centro (1.º à direita, 2.º à esquerda…), ligados a ele (artifact v131)
   // filhos: descem do meio do casal
   if(rt&&fl.length){const s0=R('s0'),x0=s0?(rt.r+s0.l)/2:rt.cx,y0=s0?rt.cy:rt.b;
     const ks=fl.map((c,i)=>R(`c${i}`)).filter(Boolean);
@@ -577,7 +577,8 @@ function treeLines(tin,rows,nsp,fl,upMore,dnMore,sibs){
   const BT=[];
   for(const tk of upMore||[]){const b=R(tk);if(!b)continue;BT.push(`<button type="button" class="tmbtn tm-up" data-act="up" data-tk="${tk}" style="left:${b.cx}px;top:${b.t-26}px">▲ mais ascendentes</button>`)}
   for(const tk of dnMore||[]){const b=R(tk);if(!b)continue;BT.push(`<button type="button" class="tmbtn tm-dn" data-act="dn" data-tk="${tk}" style="left:${b.cx}px;top:${b.b+8}px">▼ mais descendentes</button>`)}
-  for(const [tk,,n] of sibs||[]){const b=R(tk);if(!b)continue;BT.push(`<button type="button" class="tmbtn tm-sib" data-act="sib" data-tk="${tk}" style="left:${b.l-4}px;top:${b.cy-11}px" title="Ver os irmãos">◀ ${n}</button>`)}
+  const lft=nsp>=2?R(`s${nsp%2?nsp-2:nsp-1}`):null;   // com cônjuge à esquerda do centro, o botão dos irmãos do centro passa para fora dele
+  for(const [tk,,n] of sibs||[]){const b0=R(tk);if(!b0)continue;const b=tk==='r'&&lft?{...b0,l:lft.l}:b0;BT.push(`<button type="button" class="tmbtn tm-sib" data-act="sib" data-tk="${tk}" style="left:${b.l-4}px;top:${b.cy-11}px" title="Ver os irmãos">◀ ${n}</button>`)}
   svg.innerHTML=`<path d="${P.join('')}"/>`+(C.length?`<path class="cj" d="${C.join('')}"/>`:'');
   tin.querySelectorAll('.tmbtn').forEach(e=>e.remove());tin.insertAdjacentHTML('beforeend',BT.join(''));
   {const o=tin.querySelector('.sibrow');if(o){const b=tin.querySelector(`.tm-sib[data-tk="${o.dataset.tk}"]`);if(b)b.classList.add('on')}}
