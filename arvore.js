@@ -528,7 +528,7 @@ function renderTree(){
   const CELL=200,W=rows.length?CELL*rows[rows.length-1].length:0;
   // cada geração ocupa a mesma largura: os pais ficam centrados por cima do filho
   const upH=rows.map((r,k)=>`<div class="tgrp" data-lv="a${k}"><div class="tlab">${LBLG[k]}</div><div class="trow" style="width:${W}px;grid-template-columns:repeat(${r.length},1fr)">${r.map((i,j)=>{const ch=k?rows[k-1][j>>1]:A;return ch===null?'<div></div>':tbox(i,'',`a${k}_${j}`)}).join('')}</div></div>`);
-  const sps=kCj(A),fl0=kFl(A);
+  const sps=kCj(A),fl0=kFl(A),lsp=c=>{const s=kCj(c)[0];return s!==undefined&&s!==null&&kPa(s).length>0};   // cônjuge de um filho com pais conhecidos fica à esquerda do filho
   // os filhos ficam junto do cônjuge de quem são filhos (à esquerda, sem cônjuge mostrado ao meio, à direita) e a linha sai do traço entre os dois pais (Tiago, 22/11)
   const oth=c=>kPa(c).find(x=>x!==A&&sps.includes(x)),rk=c=>{const o=oth(c);return o===undefined?1:sps.indexOf(o)%2?0:2};
   const fl=fl0.map((c,i)=>[c,i]).sort((a,b)=>rk(a[0])-rk(b[0])||a[1]-b[1]).map(x=>x[0]);
@@ -559,7 +559,7 @@ function renderTree(){
   const up=rows.map((r,k)=>k).reverse().map(k=>around('a'+k).map(L=>L==='a'+k?upH[k]:bandH(L)).join('')).join('');
   const aA=around('anc'),ai=aA.indexOf('anc'),ancPre=aA.slice(0,ai).map(L=>bandH(L)).join(''),ancPost=aA.slice(ai+1).map(L=>bandH(L)).join('');
   const gl=fl.length?[...around('fil'),...(ng?['LBL',...around('net')]:[])]:[];
-  const kids=gl.map((L,ri)=>{const r=ri+1;return L==='fil'?fl.map((c,i)=>`<div class="tunit" style="grid-row:${r};grid-column:${i+1}">${tbox(c,'',`c${i}`)}${kCj(c).map((s,j)=>tbox(s,'',`c${i}s${j}`)).join('')}</div>`).join(''):L==='LBL'?`<div class="tlab" style="grid-row:${r}">Netos (${ng})</div>`:L==='net'?fl.map((c,i)=>`<div class="tgk" style="grid-row:${r};grid-column:${i+1}">${kFl(c).map((g,j)=>tbox(g,'',`g${i}_${j}`)).join('')}</div>`).join(''):bandH(L,`grid-row:${r};grid-column:1/-1`)}).join('');
+  const kids=gl.map((L,ri)=>{const r=ri+1;return L==='fil'?fl.map((c,i)=>{const Sx=kCj(c).map((s,j)=>tbox(s,'',`c${i}s${j}`)),lf=lsp(c);return `<div class="tunit" style="grid-row:${r};grid-column:${i+1}">${lf?Sx[0]:''}${tbox(c,'',`c${i}`)}${Sx.slice(lf?1:0).join('')}</div>`}).join(''):L==='LBL'?`<div class="tlab" style="grid-row:${r}">Netos (${ng})</div>`:L==='net'?fl.map((c,i)=>`<div class="tgk" style="grid-row:${r};grid-column:${i+1}">${kFl(c).map((g,j)=>tbox(g,'',`g${i}_${j}`)).join('')}</div>`).join(''):bandH(L,`grid-row:${r};grid-column:1/-1`)}).join('');
   $('#main').innerHTML=`<div class="sec"><h2>Árvore de ${esc(a.n)}</h2><div class="muted">Antepassados para cima, descendentes para baixo. Toque num nome para o pôr no centro (passa a ser o perfil ativo); toque na pessoa do centro para abrir a ficha.${A!==EGO?` <button type="button" class="tmbtn tm-base" id="ancreset2" title="Voltar a pôr a pessoa base no centro da árvore">⚓ ancorar na pessoa base (${esc(egoNome())})</button> `:' Âncora: a pessoa base.'} A âncora é só o centro desta árvore; o âmbito, a geração e o ramo vêm da pessoa base (${esc(egoNome())}).</div></div>
    <div class="tree"><div class="tin${upMore.length?' mup':''}${dnMore.length?' mdn':''}" id="tin"><svg id="tsvg" aria-hidden="true"></svg>${up}${ancPre}
    <div class="tgrp"><div class="tlab">Perfil ativo${sps.length?' e cônjuge':''}</div><div class="tcenter">${sps.map((s,i)=>i%2?tbox(s,'',`s${i}`):'').reverse().join('')}${tbox(A,'root','r')}${sps.map((s,i)=>i%2?'':tbox(s,'',`s${i}`)).join('')}</div></div>${ancPost}
@@ -594,7 +594,7 @@ function renderTree(){
   const insb=slots;
   Object.keys(slots).forEach(tk=>{const e=document.querySelector(`#tin [data-tk="${tk}"]`);if(e)e.style.paddingBottom=(6+24*slots[tk].length)+'px'});
   dsb.forEach(([tk])=>{const e=document.querySelector(`#tin [data-tk="${tk}"]`);if(e)e.style.marginBottom='28px'});   // espaço para o botão «descendentes», que fica por baixo da caixa
-  const tin=$('#tin');tin._draw=()=>draw();const draw=()=>{layBands(tin);treeLines(tin,rows,sps.length,fl.map(c=>[kCj(c).length,kFl(c).length]),upMore,dnMore,sibs,fg,cjb,insb,asb,dsb)};
+  const tin=$('#tin');tin._draw=()=>draw();const draw=()=>{layBands(tin);treeLines(tin,rows,sps.length,fl.map(c=>[kCj(c).length,kFl(c).length,lsp(c)]),upMore,dnMore,sibs,fg,cjb,insb,asb,dsb)};
   // «ascendentes» dos cônjuges (da âncora e dos filhos): os pais deles, se houver na árvore
   const asb=[],asl={};const addas=(tk,x)=>{if(x===null||x===undefined)return;const P2=kPa(x);if(P2.length){asl[tk]=P2;asb.push([tk,x,true,TREE_EXP.has('as:'+x)])}};
   sps.forEach((x,i)=>addas(`s${i}`,x));fl.forEach((c,i)=>kCj(c).forEach((x,j)=>addas(`c${i}s${j}`,x)));
@@ -634,27 +634,33 @@ function treeLines(tin,rows,nsp,fl,upMore,dnMore,sibs,fg,cjb,insb,asb,dsb){
   const R=tk=>{const e=tin.querySelector(`[data-tk="${tk}"]`);if(!e)return null;const r=e.getBoundingClientRect();return {l:r.left-O.left,r:r.right-O.left,t:r.top-O.top,b:r.bottom-O.top,cx:(r.left+r.right)/2-O.left,cy:(r.top+r.bottom)/2-O.top,el:e}};
   const P=[],C=[];
   // pais (dois de cima) ligados ao filho (em baixo), em cotovelo
-  const fam=(ps,ch)=>{ps=ps.filter(Boolean);if(!ps.length||!ch)return;
-    const y=ch.t-11, xs=ps.map(p=>p.cx).concat([ch.cx]);
+  const my=(a,b)=>(Math.max(a.t,b.t)+Math.min(a.b,b.b))/2;   // altura comum às duas caixas: o traço entre cônjuges é sempre horizontal
+  const fam=(ps,ch)=>{ps=ps.filter(Boolean).sort((a,b)=>a.cx-b.cx);if(!ps.length||!ch)return;
+    const y=ch.t-11;
+    if(ps.length===2&&ps[0].r<ps[1].l){const ym=my(ps[0],ps[1]),m=(ps[0].r+ps[1].l)/2;   // casal: traço horizontal entre os dois e a linha do filho sai do meio
+      C.push(`M${ps[0].r},${ym}H${ps[1].l}`);P.push(`M${m},${ym}V${y}`,`M${Math.min(m,ch.cx)},${y}H${Math.max(m,ch.cx)}`,`M${ch.cx},${y}V${ch.t}`);return}
+    const xs=ps.map(p=>p.cx).concat([ch.cx]);
     for(const p of ps)P.push(`M${p.cx},${p.b}V${y}`);
     P.push(`M${Math.min(...xs)},${y}H${Math.max(...xs)}`,`M${ch.cx},${y}V${ch.t}`)};
   rows.forEach((r,k)=>{for(let j=0;j<r.length;j+=2){const ch=R(k?`a${k-1}_${j>>1}`:'r');fam([R(`a${k}_${j}`),R(`a${k}_${j+1}`)],ch)}});
   // casamento da âncora: traço entre os cônjuges
   const rt=R('r');
-  for(let i=0;i<nsp;i++){const s=R(`s${i}`),inn=i<2?rt:R(`s${i-2}`);if(s&&inn)C.push(i%2?`M${s.r},${s.cy}H${inn.l}`:`M${inn.r},${s.cy}H${s.l}`)}   // cônjuges de um lado e do outro da âncora (1.º à direita, 2.º à esquerda…), ligados a ela
+  for(let i=0;i<nsp;i++){const s=R(`s${i}`),inn=i<2?rt:R(`s${i-2}`);if(s&&inn)C.push(i%2?`M${s.r},${my(s,inn)}H${inn.l}`:`M${inn.r},${my(s,inn)}H${s.l}`)}   // cônjuges de um lado e do outro da âncora (1.º à direita, 2.º à esquerda…), ligados a ela
   // filhos: descem do meio do traço entre a pessoa e o cônjuge de quem são filhos (ou da pessoa, se o outro progenitor não é um cônjuge mostrado)
   if(rt&&fl.length){for(const g of [...new Set(fg||[])]){
     const ks=fl.map((c,i)=>fg[i]===g?R(`c${i}`):null).filter(Boolean);if(!ks.length)continue;
     let x0=rt.cx,y0=rt.b;
-    if(g){const sp=R(g),n=+g.slice(1),inn=n<2?rt:R(`s${n-2}`);if(sp&&inn){const dir=sp.cx>inn.cx;x0=((dir?inn.r:sp.r)+(dir?sp.l:inn.l))/2;y0=sp.cy}}
+    if(g){const sp=R(g),n=+g.slice(1),inn=n<2?rt:R(`s${n-2}`);if(sp&&inn){const dir=sp.cx>inn.cx;x0=((dir?inn.r:sp.r)+(dir?sp.l:inn.l))/2;y0=my(sp,inn)}}
     const y=Math.min(...ks.map(k=>k.t))-11,xs=ks.map(k=>k.cx).concat([x0]);
     P.push(`M${x0},${y0}V${y}`,`M${Math.min(...xs)},${y}H${Math.max(...xs)}`);for(const k of ks)P.push(`M${k.cx},${y}V${k.t}`)}}
   // casamentos dos filhos e netos: descem do meio de cada casal
-  fl.forEach(([ns,ng],i)=>{const ck=R(`c${i}`);if(!ck)return;
-    for(let j=0;j<ns;j++){const s=R(`c${i}s${j}`),prev=j?R(`c${i}s${j-1}`):ck;if(s&&prev)C.push(`M${prev.r},${s.cy}H${s.l}`)}
+  fl.forEach(([ns,ng,lf],i)=>{const ck=R(`c${i}`);if(!ck)return;
+    for(let j=0;j<ns;j++){const s=R(`c${i}s${j}`);if(!s)continue;
+      if(j===0&&lf){C.push(`M${s.r},${my(s,ck)}H${ck.l}`);continue}   // 1.º cônjuge com pais conhecidos: fica à esquerda, para se ver a linha até aos pais
+      const prev=j>(lf?1:0)?R(`c${i}s${j-1}`):ck;if(prev)C.push(`M${prev.r},${my(prev,s)}H${s.l}`)}
     const gs=[];for(let j=0;j<ng;j++){const g=R(`g${i}_${j}`);if(g)gs.push(g)}
     if(!gs.length)return;
-    const s0=ns?R(`c${i}s0`):null,x0=s0?(ck.r+s0.l)/2:ck.cx,y0=s0?ck.cy:ck.b,y=Math.min(...gs.map(g=>g.t))-11,xs=gs.map(g=>g.cx).concat([x0]);
+    const s0=ns?R(`c${i}s0`):null,x0=s0?(lf?(s0.r+ck.l)/2:(ck.r+s0.l)/2):ck.cx,y0=s0?my(ck,s0):ck.b,y=Math.min(...gs.map(g=>g.t))-11,xs=gs.map(g=>g.cx).concat([x0]);
     P.push(`M${x0},${y0}V${y}`,`M${Math.min(...xs)},${y}H${Math.max(...xs)}`);for(const g of gs)P.push(`M${g.cx},${y}V${g.t}`)});
   // caminho até à pessoa base: troços a vermelho por cima das linhas normais
   // níveis expandidos: pais por cima / filhos por baixo da pessoa
