@@ -140,7 +140,7 @@
     throw new Error('rpc ' + fn);
   }
 
-  // ---------- escolher uma pessoa da árvore (para âncoras e convites)
+  // ---------- escolher uma pessoa da árvore (para pessoas base e convites)
   function picker(el, initial, onPick) {
     const nrm = s => String(s ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
     el.innerHTML = `<div class="egobox pick"><input type="search" autocomplete="off" placeholder="Pessoa da árvore (nome ou id)…" value="${esc(initial ? ARV.nome(initial) : '')}"><div class="egosug" role="listbox" hidden></div></div>`;
@@ -168,20 +168,20 @@
     try { G = await rpc('gestao_listar'); } catch (e) { main.innerHTML = `<div class="empty">Não foi possível ler a gestão (${esc(e.message || e)}).</div>`; return; }
     const base = location.origin + location.pathname;
     main.innerHTML = `
-      <div class="sec"><h2>Gestão de utilizadores</h2><div class="muted">Só o gestor convida, aprova e muda âncoras. Cada utilizador vê a árvore a partir da sua pessoa-âncora; o título mostra essa pessoa.</div></div>
+      <div class="sec"><h2>Gestão de utilizadores</h2><div class="muted">Só o gestor convida, aprova e muda a pessoa base. Cada utilizador vê a árvore a partir da sua pessoa base: o título, os parentescos, o âmbito, a geração e o ramo vêm dela.</div></div>
       <details class="sec" open><summary><h3>Pedidos de acesso (${G.pedidos.length})</h3></summary><div class="body gq">
         ${G.pedidos.map(p => `<div class="gi" data-id="${esc(p.id)}"><div><b>${esc(p.nome || '(sem nome)')}</b> <span class="muted">${esc(p.email)}</span><div class="muted">${quando(p.created_at)}${p.pessoa_id ? ' · convite para ' + pessoaLink(p.pessoa_id) : ' · sem convite'}</div></div>
           <div class="gpick"></div><div class="gbtns"><button class="dbtn d-aprovado" data-a="ok" disabled>Aprovar</button><button class="dbtn d-rejeitado" data-a="no">Bloquear</button><span class="msg muted"></span></div></div>`).join('') || '<div class="muted">Nenhum pedido pendente.</div>'}
       </div></details>
       <details class="sec" open><summary><h3>Convidar</h3></summary><div class="body">
-        <div class="muted">Escolha a pessoa da árvore a quem se destina o convite (fica a ser a âncora dela). O link vale 30 dias e serve uma vez; quem entrar por ele continua a precisar da sua aprovação.</div>
+        <div class="muted">Escolha a pessoa da árvore a quem se destina o convite (fica a ser a pessoa base dela). O link vale 30 dias e serve uma vez; quem entrar por ele continua a precisar da sua aprovação.</div>
         <div class="ginv"><div id="inv-pick"></div><input id="inv-nota" type="text" placeholder="Nota (opcional, ex.: email ou para quem é)"><button class="dbtn d-aprovado" id="inv-go" disabled>Criar convite</button></div>
         <div id="inv-out"></div>
         ${G.convites.length ? `<table class="op gt"><thead><tr><th>Pessoa</th><th>Nota</th><th>Criado</th><th>Estado</th><th></th></tr></thead><tbody>${G.convites.map(c => `<tr><td>${pessoaLink(c.pessoa_id)}</td><td>${esc(c.nota || '')}</td><td>${quando(c.created_at)}</td><td>${c.usado_por ? 'usado por ' + esc(c.usado_por) : new Date(c.expires_at) < new Date() ? 'expirado' : 'válido até ' + quando(c.expires_at)}</td><td>${c.usado_por ? '' : `<button class="linkbtn" data-copy="${esc(c.token)}">copiar link</button> · `}<button class="linkbtn" data-del="${esc(c.token)}">apagar</button></td></tr>`).join('')}</tbody></table>` : ''}
       </div></details>
       <details class="sec" open><summary><h3>Utilizadores (${G.membros.length})</h3></summary><div class="body gq">
-        ${G.membros.map(m => `<div class="gi" data-email="${esc(m.email)}"><div><b>${esc(m.nome || m.email)}</b> <span class="muted">${esc(m.email)}${m.papel === 'gestor' ? ' · gestor' : ''}</span><div>Âncora: ${pessoaLink(m.pessoa_id)}</div></div>
-          <div class="gbtns"><button class="linkbtn" data-anc="1">Mudar âncora</button>${m.papel === 'gestor' ? '' : ' · <button class="linkbtn" data-rm="1">Retirar acesso</button>'}<span class="msg muted"></span></div><div class="gpick" hidden></div></div>`).join('')}
+        ${G.membros.map(m => `<div class="gi" data-email="${esc(m.email)}"><div><b>${esc(m.nome || m.email)}</b> <span class="muted">${esc(m.email)}${m.papel === 'gestor' ? ' · gestor' : ''}</span><div>Pessoa base: ${pessoaLink(m.pessoa_id)}</div></div>
+          <div class="gbtns"><button class="linkbtn" data-anc="1">Mudar pessoa base</button>${m.papel === 'gestor' ? '' : ' · <button class="linkbtn" data-rm="1">Retirar acesso</button>'}<span class="msg muted"></span></div><div class="gpick" hidden></div></div>`).join('')}
       </div></details>`;
     const busy = (row, t) => { const m = row.querySelector('.msg'); if (m) m.textContent = t; };
     const again = () => gestao(main);
@@ -195,7 +195,7 @@
       const m = G.membros.find(x => x.email === row.dataset.email);
       row.querySelector('[data-anc]').onclick = () => {
         const box = row.querySelector('.gpick'); box.hidden = false;
-        box.innerHTML = '<div class="pk"></div><button class="dbtn d-aprovado" disabled>Guardar âncora</button>';
+        box.innerHTML = '<div class="pk"></div><button class="dbtn d-aprovado" disabled>Guardar pessoa base</button>';
         const sv = box.querySelector('button'), get = picker(box.querySelector('.pk'), m.pessoa_id, id => { sv.disabled = !id || id === String(m.pessoa_id); });
         sv.onclick = async () => { busy(row, 'A guardar…'); try { await rpc('mudar_ancora', { p_email: m.email, p_pessoa: get() }); again(); } catch (e) { busy(row, 'Erro: ' + (e.message || e)); } };
       };

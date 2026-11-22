@@ -290,7 +290,7 @@ function expandLn(ln,e){
   return ins?[...ln.slice(0,e),...ins,...ln.slice(e+1)]:null;
 }
 
-// ---------- «Quem sou eu»: parentesco, geração e linha calculados a partir de qualquer pessoa (porta de build.py: kinship/lineage)
+// ---------- «Pessoa base»: parentesco, geração e linha calculados a partir de qualquer pessoa (porta de build.py: kinship/lineage)
 const egoNome=()=>{const p=BY[EGO];if(!p)return 'Tiago';const w=String(p.n0||p.n).replace(/\(.*?\)/g,'').trim().split(/\s+/);return w[0]+(w.length>1?' '+w[w.length-1]:'')};
 const oa=(sx,m,f)=>sx==='F'?f:m;
 function klabel(a,b,sx,half,ssx){
@@ -317,7 +317,7 @@ function egoKin(ego){
     if(b===2){const via=kPa(i).find(x=>kPa(x).includes(anc));ssx=via!==undefined?(BY[via].s||''):''}
     out.set(i,{pr:klabel(a,b,sx,half,ssx),g:a-b});
   }
-  // família de sangue do(s) cônjuge(s) de quem sou eu
+  // família de sangue do(s) cônjuge(s) da pessoa base
   for(const sp of kCj(ego)){const nm=egoNome();for(const [i,[a,b]] of kBlood(sp)){if(out.has(i))continue;const sx=BY[i].s||'';
     out.set(i,{pr:(a===1&&b===0)?oa(sx,'sogro','sogra'):(a===0&&b===0)?'cônjuge':`${klabel(a,b,sx)} ${oa(BY[sp].s,'do','da')} cônjuge (${curto(BY[sp].n)})`,g:a-b})}}
   // afinidade: cônjuges de pessoas já rotuladas
@@ -352,8 +352,8 @@ function applyEgo(){
   applyAnchor();
   $('#home').href='#p'+hk(EGO);$('#home').title='Ir para o perfil de '+(BY[EGO]?.n||'');
   $('#egoq').value=BY[EGO]?.n||'';
-  if(!GESTOR){$('#egoq').value=BY[EGO]?.n||'';$('#egoq').readOnly=true;$('#egonote').textContent='Parentescos em relação a '+egoNome()+'.';return}
-  $('#egonote').innerHTML=EGO===ROOT0?'Parentescos em relação ao Tiago.':`Parentescos e linhas em relação a ${esc(egoNome())}${ANCORA===null?'; âmbito, geração e ramo também':''}. <button class="linkbtn" id="egoreset">Voltar ao Tiago</button>`;
+  if(!GESTOR){$('#egoq').value=BY[EGO]?.n||'';$('#egoq').readOnly=true;$('#egonote').textContent='Parentescos, âmbito, geração e ramo em relação a '+egoNome()+'.';return}
+  $('#egonote').innerHTML=EGO===ROOT0?'Parentescos, âmbito, geração e ramo em relação ao Tiago.':`Parentescos, linhas, âmbito, geração e ramo em relação a ${esc(egoNome())}. <button class="linkbtn" id="egoreset">Voltar ao Tiago</button>`;
   const r=$('#egoreset');if(r)r.onclick=()=>setEgo(ROOT0);
 }
 
@@ -362,7 +362,7 @@ const ancA=()=>ANCORA!==null?ANCORA:EGO;
 // nomes próprios + último apelido (com o prefixo «D.» quando decidido)
 const nomeCurto=p=>{const full=String(p.n0||p.n||'').replace(/\(.*?\)/g,'').trim(),w=full.split(/\s+/);const gv=(p.gv||w[0]||'').trim();const last=w.length>gv.split(/\s+/).length?w[w.length-1]:'';return (p.np?p.np+' ':'')+gv+(last?' '+last:'')};
 const pNome=p=>{const w=String(p.n0||p.n||'').replace(/\(.*?\)/g,'').trim().split(/\s+/);return w[0]||''};
-const ancNome=()=>{const p=BY[ancA()];if(!p)return 'Tiago';const w=String(p.n0||p.n).replace(/\(.*?\)/g,'').trim().split(/\s+/);return (p.np?p.np+' ':'')+w[0]+(w.length>1?' '+w[w.length-1]:'')};
+const ancNome=()=>{const p=BY[EGO];if(!p)return 'Tiago';const w=String(p.n0||p.n).replace(/\(.*?\)/g,'').trim().split(/\s+/);return (p.np?p.np+' ':'')+w[0]+(w.length>1?' '+w[w.length-1]:'')};
 function tabOf(h){return h==='arvore'||h.startsWith('ancora-')?'arvore':(['tiago','validar','operador','gestao'].includes(h)?h:'')}
 function anchorCalc(A){
   const sp=kCj(A)[0], roots=[A].concat(sp!==undefined?[sp]:[]);
@@ -390,18 +390,18 @@ function anchorCalc(A){
   return {why,gen,out};
 }
 function applyAnchor(){
-  const A=ancA();
+  const A=EGO;   // a base, não a âncora da árvore (Tiago, 22/11)
   if(A===ROOT0){for(const p of D.pessoas){p.c=p._c0;p.r=p._r0;p.g=p._g0}}
   else{const {why,gen,out}=anchorCalc(A);
-    for(const p of D.pessoas){if(p.del){p.c=p.del.estado_mh==='no_mh'?'apagada no MH':'a apagar no MH';p.r=[];p.g=null;p.an=false;continue}const o=out.get(p.id);p.c=why.get(p.id)||'fora das regras (a partir desta âncora)';p.r=o?o.r:[];p.g=o?o.g:null;p.an=gen.has(p.id)&&gen.get(p.id)>0}}
+    for(const p of D.pessoas){if(p.del){p.c=p.del.estado_mh==='no_mh'?'apagada no MH':'a apagar no MH';p.r=[];p.g=null;p.an=false;continue}const o=out.get(p.id);p.c=why.get(p.id)||'fora das regras (a partir da pessoa base)';p.r=o?o.r:[];p.g=o?o.g:null;p.an=gen.has(p.id)&&gen.get(p.id)>0}}
   const sel=(id,vals,lbl,first)=>{const el=$('#'+id),cur=el.value;el.innerHTML=`<option value="">${first}</option>`+vals.map(v=>`<option value="${esc(v)}">${esc(lbl(v))}</option>`).join('');if([...el.options].some(o=>o.value===cur))el.value=cur};
   sel('fgen',[...new Set(D.pessoas.map(p=>p.g).filter(g=>g!==null&&g!==undefined))].sort((a,b)=>b-a),g=>'Geração '+genLbl(g),'Todas as gerações');
   sel('fcat',[...new Set(D.pessoas.map(p=>p.c))].sort(),c=>c,'Todo o âmbito');
   sel('framo',[...new Set(D.pessoas.flatMap(p=>p.r))].sort(),c=>c,'Todos os ramos');
-  // título: Árvore da Família de <âncora> (e cônjuge)
+  // título: Família de <pessoa base> (e cônjuge)
   let t='Tiago e Catarina';
   if(A!==ROOT0){const p=BY[A],sp=kCj(A)[0];t=sp!==undefined?`${nomeCurto(p)} e ${nomeCurto(BY[sp])}`:nomeCurto(p)}
-  $('#titulo').textContent='Árvore da Família de '+t;document.title='Árvore da Família de '+t;
+  $('#titulo').textContent='Família de '+t;document.title='Família de '+t;
   const bar=$('#ancbar');
   if(GESTOR&&ANCORA!==null&&BY[ANCORA]){bar.hidden=false;bar.innerHTML=`Árvore ancorada em: <b>${esc(BY[ANCORA].n)}</b> — <button class="linkbtn" id="ancreset">repor</button>`;$('#ancreset').onclick=()=>setAnchor(null)}
   else bar.hidden=true;
@@ -560,7 +560,7 @@ function renderTree(){
   const aA=around('anc'),ai=aA.indexOf('anc'),ancPre=aA.slice(0,ai).map(L=>bandH(L)).join(''),ancPost=aA.slice(ai+1).map(L=>bandH(L)).join('');
   const gl=fl.length?[...around('fil'),...(ng?['LBL',...around('net')]:[])]:[];
   const kids=gl.map((L,ri)=>{const r=ri+1;return L==='fil'?fl.map((c,i)=>`<div class="tunit" style="grid-row:${r};grid-column:${i+1}">${tbox(c,'',`c${i}`)}${kCj(c).map((s,j)=>tbox(s,'',`c${i}s${j}`)).join('')}</div>`).join(''):L==='LBL'?`<div class="tlab" style="grid-row:${r}">Netos (${ng})</div>`:L==='net'?fl.map((c,i)=>`<div class="tgk" style="grid-row:${r};grid-column:${i+1}">${kFl(c).map((g,j)=>tbox(g,'',`g${i}_${j}`)).join('')}</div>`).join(''):bandH(L,`grid-row:${r};grid-column:1/-1`)}).join('');
-  $('#main').innerHTML=`<div class="sec"><h2>Árvore de ${esc(a.n)}</h2><div class="muted">Antepassados para cima, descendentes para baixo. Toque num nome para o pôr no centro (passa a ser o perfil ativo); toque na pessoa do centro para abrir a ficha.${GESTOR?(ANCORA!==null?` Âncora: ${esc(BY[ANCORA]?.n||'')} (<button class="linkbtn" id="ancreset2">repor</button>); define o título, o âmbito, a geração e o ramo.`:' Âncora por omissão (quem sou eu); define o título, o âmbito, a geração e o ramo.'):''}</div></div>
+  $('#main').innerHTML=`<div class="sec"><h2>Árvore de ${esc(a.n)}</h2><div class="muted">Antepassados para cima, descendentes para baixo. Toque num nome para o pôr no centro (passa a ser o perfil ativo); toque na pessoa do centro para abrir a ficha.${GESTOR?(ANCORA!==null?` Âncora: ${esc(BY[ANCORA]?.n||'')} (<button class="linkbtn" id="ancreset2">repor</button>).`:' Âncora por omissão (a pessoa base).'):''} A âncora é só o centro desta árvore; o âmbito, a geração e o ramo vêm da pessoa base (${esc(egoNome())}).</div></div>
    <div class="tree"><div class="tin${upMore.length?' mup':''}${dnMore.length?' mdn':''}" id="tin"><svg id="tsvg" aria-hidden="true"></svg>${up}${ancPre}
    <div class="tgrp"><div class="tlab">Perfil ativo${sps.length?' e cônjuge':''}</div><div class="tcenter">${sps.map((s,i)=>i%2?tbox(s,'',`s${i}`):'').reverse().join('')}${tbox(A,'root','r')}${sps.map((s,i)=>i%2?'':tbox(s,'',`s${i}`)).join('')}</div></div>${ancPost}
    <div class="tgrp"><div class="tlab">Filhos (${fl.length})</div>${fl.length?`<div class="tkids" style="grid-template-columns:repeat(${fl.length},auto)">${kids}</div>`:'<span class="muted">—</span>'}</div></div></div>`;
@@ -601,7 +601,7 @@ function renderTree(){
   upMore.forEach(tk=>{const m=/^a(\d+)_(\d+)$/.exec(tk);if(m)addas(tk,rows[+m[1]][+m[2]])});xkind.forEach((k,y)=>{if(k==='as')addas('x_'+y,y)});   // ascendentes dos antepassados de topo
   tin._bands=[...bands.values()];tin._xg=tin._bands.flatMap(b=>b.groups);
   tin._cjl=cjl;tin._cjo=cjo;tin._asl=asl;tin._dsl=dsl;tin._dso=dso;
-  // caminho mais curto até «quem sou eu» (quando a âncora é outra pessoa): o botão por onde se sai da árvore fica a vermelho (Tiago, 22/11)
+  // caminho mais curto até à pessoa base (quando a âncora é outra pessoa): o botão por onde se sai da árvore fica a vermelho (Tiago, 22/11)
   tin._path=null;if(EGO!==A&&BY[EGO]&&!shown.has(EGO)){    const has=new Set([...sibs.map(z=>z[0]+'|sib'),...cjb.map(z=>z[0]+'|cj'),...dsb.map(z=>z[0]+'|ds'),...asb.map(z=>z[0]+'|as')]);
     const irm=x=>(BY[x]?.ir||[]).filter(kOk),nb=y=>[...kPa(y).map(x=>[x,'ds']),...kFl(y).map(x=>[x,'as']),...kCj(y).map(x=>[x,'cj']),...irm(y).map(x=>[x,'sib'])];   // y é filho/pai/cônjuge/irmão de x → botão de x
     const seen=new Set([EGO]);let fr=[EGO];
@@ -670,9 +670,9 @@ function treeLines(tin,rows,nsp,fl,upMore,dnMore,sibs,fg,cjb,insb,asb,dsb){
   svg.innerHTML=`<path d="${P.join('')}"/>`+(C.length?`<path class="cj" d="${C.join('')}"/>`:'')+'';
   tin.querySelectorAll('.tmbtn').forEach(e=>e.remove());tin.insertAdjacentHTML('beforeend',BT.join(''));
   {const o=tin.querySelector('.sibrow');if(o){const b=tin.querySelector(`.tm-${o.dataset.kind||'sib'}[data-tk="${o.dataset.tk}"]`);if(b)b.classList.add('on')}}
-  for(const q of tin._path||[]){const b=tin.querySelector(`.tm-${q.kind}[data-tk="${q.tk}"]`);if(b&&!b.classList.contains('tm-path')){b.classList.add('tm-path');b.title+=' — caminho até quem sou eu'}}
+  for(const q of tin._path||[]){const b=tin.querySelector(`.tm-${q.kind}[data-tk="${q.tk}"]`);if(b&&!b.classList.contains('tm-path')){b.classList.add('tm-path');b.title+=' — caminho até à pessoa base'}}
 }
-function setEgo(id){if(!GESTOR)return;EGO=id;try{localStorage.setItem('arv-ego',JSON.stringify(id))}catch(e){}applyEgo();list();route()}
+function setEgo(id){if(!GESTOR)return;EGO=id;try{localStorage.setItem('arv-ego',JSON.stringify(id))}catch(e){}ANCORA=null;try{localStorage.removeItem('arv-ancora')}catch(e){}applyEgo();list();route()}   // mudar a pessoa base volta a ancorar a árvore nela
 function initEgo(){
   const q=$('#egoq'),box=$('#egosug');
   const close=()=>{box.hidden=true};
