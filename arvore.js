@@ -473,7 +473,7 @@ function tbox(id,cls,tk){
   if(!q)return `<div class="tb empty"${k}>—</div>`;
   // foto de perfil: miniatura fixa à esquerda (32×40), só quando existe; imagem privada preenchida por APP.media
   const ft=q.ft&&q.ft.web?`<img class="tft" data-m="${esc(q.ft.web)}" alt="" loading="lazy">`:'';
-  return `<div class="tb ${cls||''}${ft?' hasft':''} sx-${esc(q.s||'')}"${k}>${ft}<button class="tn" data-go="${esc(q.id)}">${esc(q.n)}</button><small>${q.nb?'n. '+esc(q.nb):'n. ?'}${q.nm?' · † '+esc(q.nm):''}</small><small>${esc(q.pr||'')}</small>${cls==='root'?`<button class="ta" data-go="${esc(q.id)}">abrir a ficha</button>`:!GESTOR?'':`<button class="ta" data-anc="${esc(q.id)}">⚓ ancorar aqui</button>`}</div>`;
+  return `<div class="tb ${cls||''}${q.id===EGO?' ego':''}${ft?' hasft':''} sx-${esc(q.s||'')}"${k}>${ft}<button class="tn" data-go="${esc(q.id)}">${esc(q.n)}</button><small>${q.nb?'n. '+esc(q.nb):'n. ?'}${q.nm?' · † '+esc(q.nm):''}</small><small>${esc(q.pr||'')}</small>${cls==='root'?`<button class="ta" data-go="${esc(q.id)}">abrir a ficha</button>`:!GESTOR?'':`<button class="ta" data-anc="${esc(q.id)}">⚓ ancorar aqui</button>`}</div>`;
 }
 let TREE_RO=null,TREE_EXP=new Map(),TREE_EXP_A=null,TREE_KEEP=null,TREE_LAST_A=null;   // níveis expandidos na árvore (Tiago, 22/11)
 // irmã/irmãs só quando todos os irmãos mostrados são do sexo feminino (Tiago, 22/11)
@@ -600,7 +600,10 @@ function renderTree(){
   const insb=slots;
   Object.keys(slots).forEach(tk=>{const e=document.querySelector(`#tin [data-tk="${tk}"]`);if(e)e.style.paddingBottom=(6+24*slots[tk].length)+'px'});
   dsb.forEach(([tk])=>{const e=document.querySelector(`#tin [data-tk="${tk}"]`);if(e)e.style.marginBottom='28px'});   // espaço para o botão «descendentes», que fica por baixo da caixa
-  const tin=$('#tin');tin._draw=()=>draw();const draw=()=>{layBands(tin);treeLines(tin,rows,sps.length,fl.map(c=>[kCj(c).length,kFl(c).length,lsp(c)]),upMore,dnMore,sibs,fg,cjb,insb,asb,dsb)};
+  const tin=$('#tin'),draw=(n)=>{layBands(tin);treeLines(tin,rows,sps.length,fl.map(c=>[kCj(c).length,kFl(c).length,lsp(c)]),upMore,dnMore,sibs,fg,cjb,insb,asb,dsb);
+    // nenhuma caixa pode ficar cortada à esquerda por causa dos deslocamentos de centragem: a árvore ganha padding-left
+    n=typeof n==='number'?n:0;if(n<5){const O=tin.getBoundingClientRect();let m=1e9;tin.querySelectorAll('.tb').forEach(e=>{if(!e.closest('.sibrow'))m=Math.min(m,e.getBoundingClientRect().left-O.left)});
+      if(m<4){tin._padL=(tin._padL||0)+Math.ceil(4-m);if(!tin.querySelector('.sibrow'))tin.style.paddingLeft=tin._padL+'px';draw(n+1)}}};
   // «ascendentes» dos cônjuges (da âncora e dos filhos): os pais deles, se houver na árvore
   const asb=[],asl={};const addas=(tk,x)=>{if(x===null||x===undefined)return;const P2=kPa(x);if(P2.length){asl[tk]=P2;asb.push([tk,x,true,TREE_EXP.has('as:'+x)])}};
   sps.forEach((x,i)=>addas(`s${i}`,x));fl.forEach((c,i)=>kCj(c).forEach((x,j)=>addas(`c${i}s${j}`,x)));
@@ -617,9 +620,10 @@ function renderTree(){
       for(const [v,kd] of nb(u)){if(dE.get(v)!==dE.get(u)-1||dA.get(v)!==dA.get(u)+1)continue;
         if(!shown.has(v)&&has.has(tu+'|'+kd))hit.push({tk:tu,kind:kd,id:v})}}
       if(hit.length)tin._path=hit}}
+  tin._draw=draw;   // o padding da faixa dos irmãos não muda o tamanho observado: redesenha-se à mão
   draw();
   if(TREE_RO)TREE_RO.disconnect();
-  if(window.ResizeObserver){TREE_RO=new ResizeObserver(draw);TREE_RO.observe(tin)}
+  if(window.ResizeObserver){TREE_RO=new ResizeObserver(()=>draw());TREE_RO.observe(tin)}
   // a âncora fica ao centro do ecrã quando a árvore é mais larga do que a janela
   const tr=tin.parentElement,rb=tin.querySelector('[data-tk="r"]');
   if(TREE_KEEP){tr.scrollLeft=TREE_KEEP.x;window.scrollTo(0,TREE_KEEP.y);TREE_KEEP=null}
@@ -629,7 +633,8 @@ function renderTree(){
   TREE_LAST_A=A;
 }
 function layBands(tin,again){again=again||0;
-  let need=0;
+  let need=0,gapN=0;
+  {const kd=tin.querySelector('.tkids');if(kd)kd.style.columnGap=tin._gapX?(26+tin._gapX)+'px':''}   // folga extra entre os filhos, se for preciso para centrar cada filho por baixo dos pais
   // a âncora e o cônjuge ficam centrados entre os vários filhos (Tiago, 22/11)
   {const tc=tin.querySelector('.tcenter');if(tc){tc.style.transform='';const G=tin._cgrp||[];
     if(G.length===1&&G[0].ks.length>1){const rt=tin.querySelector('[data-tk="r"]'),g=G[0].g,Q=e=>e&&e.getBoundingClientRect(),r=Q(rt),ks=G[0].ks.map(k=>Q(tin.querySelector(`.tunit [data-tk="${k}"]`))).filter(Boolean);let x0=r.left+r.width/2;
@@ -650,9 +655,11 @@ function layBands(tin,again){again=again||0;
       const host=e=>e.parentElement.classList.contains('tcenter')?e:e.parentElement,h0=host(bx[0]),sib=[...h0.parentElement.children].filter(c=>c.style.gridRow===h0.style.gridRow&&!bx.some(e=>host(e)===c)).map(c=>c.getBoundingClientRect());
       if(dx>0){const nx=sib.filter(r=>r.left>=r1.right-1).map(r=>r.left);if(nx.length)dx=Math.min(dx,Math.max(0,Math.min(...nx)-16-r1.right))}
       else{const pv=sib.filter(r=>r.right<=r0.left+1).map(r=>r.right);if(pv.length)dx=-Math.min(-dx,Math.max(0,r0.left-16-Math.max(...pv)))}
+      {const want=(F.left+F.right)/2-mid;if(Math.abs(want-dx)>.5&&h0.classList.contains('tcenter')||Math.abs(want-dx)>.5&&bx[0].parentElement.classList.contains('tcenter'))gapN=Math.max(gapN,Math.abs(want-dx))}
       if(Math.abs(dx)>.5)bx.forEach(e=>e.style.transform=`translateX(${dx}px)`);
       need=Math.max(need,O.left+4-(r0.left+dx))}}
-  if(need>.5&&again<4){tin._padL=(tin._padL||0)+Math.ceil(need);if(!tin.querySelector('.sibrow'))tin.style.paddingLeft=tin._padL+'px';layBands(tin,again+1)}
+  if(gapN>.5&&again<10){tin._gapX=(tin._gapX||0)+Math.ceil(gapN*2);layBands(tin,again+1);return}
+  if(need>.5&&again<10){tin._padL=(tin._padL||0)+Math.ceil(need);if(!tin.querySelector('.sibrow'))tin.style.paddingLeft=tin._padL+'px';layBands(tin,again+1)}
 }
 function treeLines(tin,rows,nsp,fl,upMore,dnMore,sibs,fg,cjb,insb,asb,dsb){
   const svg=tin.querySelector('#tsvg');if(!svg||!tin.isConnected)return;
