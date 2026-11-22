@@ -479,7 +479,8 @@ function showSibs(id,tk,tin,stay,pick){
   const q=BY[id],bx=tin.querySelector(`[data-tk="${tk}"]`);if(!q||!bx||!tin.querySelector(`.tm-sib[data-tk="${tk}"]`))return;
   // os botões e as linhas estão em posições absolutas: mudar o padding-left não dispara o ResizeObserver, por isso redesenha-se à mão
   const unpad=()=>{if(tin.style.paddingLeft){tin.style.paddingLeft='';if(tin._draw)tin._draw()}},btn=()=>tin.querySelector(`.tm-sib[data-tk="${tk}"]`);
-  const yr=x=>{const m=/\d{4}/.exec(BY[x]?.nb||'');return m?+m[0]:99999};
+  // do mais velho para o mais novo: data completa do Nascimento (senão Batizado/Batismo), só em último caso o ano de nb (artifact v128)
+  const yr=x=>{const z=BY[x]||{},F=z.f||[];for(const tp of [['Nascimento'],['Batizado','Batismo']]){const f=F.find(g=>tp.includes(g.tipo)&&/\d{4}/.test(g.data||''));if(f){const m=/(\d{1,2})\/(\d{1,2})\/(\d{4})|(\d{1,2})\/(\d{4})|(\d{4})/.exec(f.data);return m[3]?+m[3]*10000+m[2]*100+ +m[1]:m[5]?+m[5]*10000+m[4]*100:+m[6]*10000}}const m=/\d{4}/.exec(z.nb||'');return m?+m[0]*10000:99999999};
   const L=[...(q.ir||[]).filter(kOk)].sort((a,b)=>yr(a)-yr(b));
   const old=tin.querySelector('.sibrow'),again=old&&old.dataset.tk===tk;
   tin.querySelectorAll('.sibrow').forEach(e=>e.remove());tin.querySelectorAll('.sibsel').forEach(e=>e.classList.remove('sibsel'));tin.querySelectorAll('.tm-sib.on').forEach(e=>e.classList.remove('on'));unpad();
@@ -497,7 +498,7 @@ function showSibs(id,tk,tin,stay,pick){
   const e0=el.getBoundingClientRect(),f0=f.getBoundingClientRect(),r=bx.getBoundingClientRect();
   el.style.left=(bl-GAP-w)+'px';el.style.top=(r.top-O.top-(f0.top-e0.top))+'px';el.style.visibility='';
   {const tr=tin.parentElement,a=tr.getBoundingClientRect(),b=el.getBoundingClientRect();if(b.left<a.left+8)tr.scrollLeft-=a.left+8-b.left}
-  el.addEventListener('click',e=>{if(e.target.closest('.sibx')){el.remove();bx.classList.remove('sibsel');btn()?.classList.remove('on');unpad();return}const g=e.target.closest('[data-go]');if(g){pick(BY[g.dataset.go]?.id);return}const a=e.target.closest('[data-anc]');if(a)stay(BY[a.dataset.anc].id)});
+  el.addEventListener('click',e=>{if(e.target.closest('.sibx')){el.remove();tin.querySelectorAll('.sibsel').forEach(z=>z.classList.remove('sibsel'));tin.querySelectorAll('.tm-sib.on').forEach(z=>z.classList.remove('on'));unpad();return}const g=e.target.closest('[data-go]');if(g){pick(BY[g.dataset.go]?.id);return}const a=e.target.closest('[data-anc]');if(a)stay(BY[a.dataset.anc].id)});
 }
 function renderTree(){
   // centro: o perfil ativo (a ficha aberta); a âncora só define o título, o âmbito e os parentescos
