@@ -560,7 +560,7 @@ function renderTree(){
   const aA=around('anc'),ai=aA.indexOf('anc'),ancPre=aA.slice(0,ai).map(L=>bandH(L)).join(''),ancPost=aA.slice(ai+1).map(L=>bandH(L)).join('');
   const gl=fl.length?[...around('fil'),...(ng?['LBL',...around('net')]:[])]:[];
   const kids=gl.map((L,ri)=>{const r=ri+1;return L==='fil'?fl.map((c,i)=>`<div class="tunit" style="grid-row:${r};grid-column:${i+1}">${tbox(c,'',`c${i}`)}${kCj(c).map((s,j)=>tbox(s,'',`c${i}s${j}`)).join('')}</div>`).join(''):L==='LBL'?`<div class="tlab" style="grid-row:${r}">Netos (${ng})</div>`:L==='net'?fl.map((c,i)=>`<div class="tgk" style="grid-row:${r};grid-column:${i+1}">${kFl(c).map((g,j)=>tbox(g,'',`g${i}_${j}`)).join('')}</div>`).join(''):bandH(L,`grid-row:${r};grid-column:1/-1`)}).join('');
-  $('#main').innerHTML=`<div class="sec"><h2>Árvore de ${esc(a.n)}</h2><div class="muted">Antepassados para cima, descendentes para baixo. Toque num nome para o pôr no centro (passa a ser o perfil ativo); toque na pessoa do centro para abrir a ficha.${GESTOR?(ANCORA!==null?` Âncora: ${esc(BY[ANCORA]?.n||'')} (<button class="linkbtn" id="ancreset2">repor</button>).`:' Âncora por omissão (a pessoa base).'):''} A âncora é só o centro desta árvore; o âmbito, a geração e o ramo vêm da pessoa base (${esc(egoNome())}).</div></div>
+  $('#main').innerHTML=`<div class="sec"><h2>Árvore de ${esc(a.n)}</h2><div class="muted">Antepassados para cima, descendentes para baixo. Toque num nome para o pôr no centro (passa a ser o perfil ativo); toque na pessoa do centro para abrir a ficha.${A!==EGO?` <button type="button" class="tmbtn tm-base" id="ancreset2" title="Voltar a pôr a pessoa base no centro da árvore">⚓ ancorar na pessoa base (${esc(egoNome())})</button> `:' Âncora: a pessoa base.'} A âncora é só o centro desta árvore; o âmbito, a geração e o ramo vêm da pessoa base (${esc(egoNome())}).</div></div>
    <div class="tree"><div class="tin${upMore.length?' mup':''}${dnMore.length?' mdn':''}" id="tin"><svg id="tsvg" aria-hidden="true"></svg>${up}${ancPre}
    <div class="tgrp"><div class="tlab">Perfil ativo${sps.length?' e cônjuge':''}</div><div class="tcenter">${sps.map((s,i)=>i%2?tbox(s,'',`s${i}`):'').reverse().join('')}${tbox(A,'root','r')}${sps.map((s,i)=>i%2?'':tbox(s,'',`s${i}`)).join('')}</div></div>${ancPost}
    <div class="tgrp"><div class="tlab">Filhos (${fl.length})</div>${fl.length?`<div class="tkids" style="grid-template-columns:repeat(${fl.length},auto)">${kids}</div>`:'<span class="muted">—</span>'}</div></div></div>`;
@@ -571,7 +571,7 @@ function renderTree(){
   // mudar a âncora aqui não sai da vista árvore: o endereço fica sempre em #arvore
   const stay=id=>{if(location.hash==='#arvore')setAnchor(id);else{setAnchor(id,true);location.hash='arvore'}};
   $('#main').querySelectorAll('[data-anc]').forEach(b=>b.onclick=()=>stay(BY[b.dataset.anc].id));
-  const r2=$('#ancreset2');if(r2)r2.onclick=()=>stay(null);
+  const r2=$('#ancreset2');if(r2)r2.onclick=()=>{CUR=EGO;if(GESTOR&&ANCORA!==null)setAnchor(null);else renderTree()};
   window.APP.media($('#main'));
   // botões da árvore (artifact): irmãos, cônjuges, ascendentes e descendentes abrem faixas; não mudam o centro nem a âncora
   {const tin0=$('#tin');tin0.addEventListener('click',ev=>{const b=ev.target.closest('.tmbtn');if(!b)return;const m=/^(a|g)(\d+)_(\d+)$/.exec(b.dataset.tk)||[],act=b.dataset.act;let id=null;
@@ -601,15 +601,15 @@ function renderTree(){
   upMore.forEach(tk=>{const m=/^a(\d+)_(\d+)$/.exec(tk);if(m)addas(tk,rows[+m[1]][+m[2]])});xkind.forEach((k,y)=>{if(k==='as')addas('x_'+y,y)});   // ascendentes dos antepassados de topo
   tin._bands=[...bands.values()];tin._xg=tin._bands.flatMap(b=>b.groups);
   tin._cjl=cjl;tin._cjo=cjo;tin._asl=asl;tin._dsl=dsl;tin._dso=dso;
-  // caminho mais curto até à pessoa base (quando a âncora é outra pessoa): o botão por onde se sai da árvore fica a vermelho (Tiago, 22/11)
-  tin._path=null;if(EGO!==A&&BY[EGO]&&!shown.has(EGO)){    const has=new Set([...sibs.map(z=>z[0]+'|sib'),...cjb.map(z=>z[0]+'|cj'),...dsb.map(z=>z[0]+'|ds'),...asb.map(z=>z[0]+'|as')]);
-    const irm=x=>(BY[x]?.ir||[]).filter(kOk),nb=y=>[...kPa(y).map(x=>[x,'ds']),...kFl(y).map(x=>[x,'as']),...kCj(y).map(x=>[x,'cj']),...irm(y).map(x=>[x,'sib'])];   // y é filho/pai/cônjuge/irmão de x → botão de x
-    const seen=new Set([EGO]);let fr=[EGO];
-    const hit=[];   // empates: ficam todos os caminhos com o mesmo comprimento (Tiago, 22/11)
-    while(fr.length&&!hit.length){const nx=[];for(const y of fr){for(const [x,kd] of nb(y)){if(seen.has(x))continue;
-      if(shown.has(x)){const tk=tkOf.get(x);if(tk&&has.has(tk+'|'+kd))hit.push({tk,kind:kd,id:y});continue}
-      seen.add(x);nx.push(x)}}fr=nx}
-    if(hit.length)tin._path=hit}
+  // caminho mais curto da âncora até à pessoa base (Tiago, 22/11): as linhas da árvore nesse caminho ficam a vermelho; onde o caminho sai da árvore, o botão fica a vermelho; nos empates ficam todos
+  tin._path=null;tin._red=[];if(EGO!==A&&BY[EGO]){const has=new Set([...sibs.map(z=>z[0]+'|sib'),...cjb.map(z=>z[0]+'|cj'),...dsb.map(z=>z[0]+'|ds'),...asb.map(z=>z[0]+'|as')]);
+    const irm=x=>(BY[x]?.ir||[]).filter(kOk),nb=u=>[...kPa(u).map(v=>[v,'as']),...kFl(u).map(v=>[v,'ds']),...kCj(u).map(v=>[v,'cj']),...irm(u).map(v=>[v,'sib'])];   // v é pai/filho/cônjuge/irmão de u → botão de u
+    const dist=src=>{const d=new Map([[src,0]]);let fr=[src];while(fr.length){const nx=[];for(const u of fr)for(const [v] of nb(u))if(!d.has(v)){d.set(v,d.get(u)+1);nx.push(v)}fr=nx}return d};
+    const dA=dist(A),dE=dist(EGO),D=dA.get(EGO);
+    if(D!==undefined){const hit=[];for(const u of shown){const tu=tkOf.get(u);if(!tu||dA.get(u)+dE.get(u)!==D)continue;
+      for(const [v,kd] of nb(u)){if(dE.get(v)!==dE.get(u)-1||dA.get(v)!==dA.get(u)+1)continue;
+        if(shown.has(v)){const tv=tkOf.get(v);if(tv)tin._red.push([tu,tv,kd])}else if(has.has(tu+'|'+kd))hit.push({tk:tu,kind:kd,id:v})}}
+      if(hit.length)tin._path=hit}}
   draw();
   if(TREE_RO)TREE_RO.disconnect();
   if(window.ResizeObserver){TREE_RO=new ResizeObserver(draw);TREE_RO.observe(tin)}
@@ -656,6 +656,11 @@ function treeLines(tin,rows,nsp,fl,upMore,dnMore,sibs,fg,cjb,insb,asb,dsb){
     if(!gs.length)return;
     const s0=ns?R(`c${i}s0`):null,x0=s0?(ck.r+s0.l)/2:ck.cx,y0=s0?ck.cy:ck.b,y=Math.min(...gs.map(g=>g.t))-11,xs=gs.map(g=>g.cx).concat([x0]);
     P.push(`M${x0},${y0}V${y}`,`M${Math.min(...xs)},${y}H${Math.max(...xs)}`);for(const g of gs)P.push(`M${g.cx},${y}V${g.t}`)});
+  // caminho até à pessoa base: troços a vermelho por cima das linhas normais
+  const RP=[];for(const [tu,tv,kd] of tin._red||[]){const u=R(tu),v=R(tv);if(!u||!v)continue;
+    if(kd==='as'||kd==='ds'){const [pa,ch]=kd==='as'?[v,u]:[u,v],y=ch.t-11;RP.push(`M${pa.cx},${pa.b}V${y}H${ch.cx}V${ch.t}`)}
+    else if(kd==='cj'){const [a,b]=u.cx<v.cx?[u,v]:[v,u],y=(a.cy+b.cy)/2;RP.push(`M${a.r},${y}H${b.l}`)}
+    else{const y=Math.min(u.t,v.t)-11;RP.push(`M${u.cx},${u.t}V${y}H${v.cx}V${v.t}`)}}
   // níveis expandidos: pais por cima / filhos por baixo da pessoa
   for(const g of tin._xg||[]){const f=R(g.fromTk);if(!f)continue;if(g.kind==='as')fam(g.ids.map(y=>R('x_'+y)),f);else g.ids.forEach(y=>fam([f],R('x_'+y)))}
   const BT=[];
@@ -667,7 +672,7 @@ function treeLines(tin,rows,nsp,fl,upMore,dnMore,sibs,fg,cjb,insb,asb,dsb){
   for(const [tk,id,ou,ex,on] of dsb||[]){const b=R(tk);if(!b)continue;BT.push(`<button type="button" class="tmbtn tm-ds${on?' xpd':''}" data-act="ds" data-tk="${tk}"${ex?' data-xp="1"':''} style="left:${b.cx}px;top:${b.b+8}px;transform:translateX(-50%)" title="${ex?(on?'Recolher este nível':'Mostrar mais um nível só deste ramo'):'Mostrar os outros descendentes'}">▼ ${ou?'outros ':''}descendentes</button>`)}
   for(const [tk,id,ex,on] of asb||[]){const b=R(tk);if(!b)continue;BT.push(`<button type="button" class="tmbtn tm-as${on?' xpd':''}" data-act="as" data-tk="${tk}" data-xp="1" style="left:${b.cx}px;top:${b.t-26}px;transform:translateX(-50%)" title="${on?'Recolher este nível':'Mostrar mais um nível só deste ramo'}">▲ ascendentes</button>`)}
   svg.setAttribute('width',tin.scrollWidth);svg.setAttribute('height',tin.scrollHeight);
-  svg.innerHTML=`<path d="${P.join('')}"/>`+(C.length?`<path class="cj" d="${C.join('')}"/>`:'')+'';
+  svg.innerHTML=`<path d="${P.join('')}"/>`+(C.length?`<path class="cj" d="${C.join('')}"/>`:'')+(RP.length?`<path class="red" d="${RP.join('')}"/>`:'')+'';
   tin.querySelectorAll('.tmbtn').forEach(e=>e.remove());tin.insertAdjacentHTML('beforeend',BT.join(''));
   {const o=tin.querySelector('.sibrow');if(o){const b=tin.querySelector(`.tm-${o.dataset.kind||'sib'}[data-tk="${o.dataset.tk}"]`);if(b)b.classList.add('on')}}
   for(const q of tin._path||[]){const b=tin.querySelector(`.tm-${q.kind}[data-tk="${q.tk}"]`);if(b&&!b.classList.contains('tm-path')){b.classList.add('tm-path');b.title+=' — caminho até à pessoa base'}}
