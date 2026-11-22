@@ -486,8 +486,8 @@ function renderTree(){
   const sps=kCj(A),fl=kFl(A);
   // há mais gente para lá do que se mostra: linha tracejada para cima (pais dos bisavós) e para baixo (filhos dos netos)
   const topK=rows.length-1,upMore=rows.length&&topK===2?rows[topK].map((i,j)=>i!==null&&kPa(i).length?`a${topK}_${j}`:null).filter(Boolean):[];
-  const sibs=[];{const has=x=>x!==null&&x!==undefined&&(BY[x]?.ir||[]).filter(kOk).length>0;
-    if(has(A))sibs.push(['r',A]);rows.forEach((r,k)=>r.forEach((x,j)=>{if(has(x))sibs.push([`a${k}_${j}`,x])}))}
+  const sibs=[];{const nir=x=>x!==null&&x!==undefined?(BY[x]?.ir||[]).filter(kOk).length:0;
+    if(nir(A))sibs.push(['r',A,nir(A)]);rows.forEach((r,k)=>r.forEach((x,j)=>{const n=nir(x);if(n)sibs.push([`a${k}_${j}`,x,n])}))}
   const dnMore=[];fl.forEach((c,i)=>kFl(c).forEach((g,j)=>{if(kFl(g).length)dnMore.push(`g${i}_${j}`)}));
   const ng=fl.reduce((n,c)=>n+kFl(c).length,0);
   // uma geração por linha: filhos (com os cônjuges) numa linha, netos na linha de baixo, cada grupo por baixo dos pais
@@ -549,7 +549,7 @@ function treeLines(tin,rows,nsp,fl,upMore,dnMore,sibs){
   const M=[],AW=[],BT=[];
   for(const tk of upMore||[]){const b=R(tk);if(!b)continue;M.push(`M${b.cx},${b.t}V${b.t-26}`);AW.push(`M${b.cx},${b.t-32}l-5,8h10z`);BT.push(`<button type="button" class="tmbtn tm-up" data-act="up" data-tk="${tk}" style="left:${b.cx+8}px;top:${b.t-24}px">mais ascendentes</button>`)}
   for(const tk of dnMore||[]){const b=R(tk);if(!b)continue;M.push(`M${b.cx},${b.b}V${b.b+26}`);AW.push(`M${b.cx},${b.b+32}l-5,-8h10z`);BT.push(`<button type="button" class="tmbtn tm-dn" data-act="dn" data-tk="${tk}" style="left:${b.cx+8}px;top:${b.b+8}px">mais descendentes</button>`)}
-  for(const [tk] of sibs||[]){const b=R(tk);if(!b)continue;BT.push(`<button type="button" class="tmbtn tm-sib" data-act="sib" data-tk="${tk}" style="left:${b.l-4}px;top:${b.cy-11}px" title="Centrar nos pais para mostrar os irmãos">◀ irmãos</button>`)}
+  for(const [tk,,n] of sibs||[]){const b=R(tk);if(!b)continue;BT.push(`<button type="button" class="tmbtn tm-sib" data-act="sib" data-tk="${tk}" style="left:${b.l-4}px;top:${b.cy-11}px" title="Centrar nos pais para mostrar os irmãos">◀ ${n} irm${n===1?'ão':'ãos'}</button>`)}
   svg.innerHTML=`<path d="${P.join('')}"/>`+(C.length?`<path class="cj" d="${C.join('')}"/>`:'')+(M.length?`<path class="more" d="${M.join('')}"/><path class="arw" d="${AW.join('')}"/>`:'');
   tin.querySelectorAll('.tmbtn').forEach(e=>e.remove());tin.insertAdjacentHTML('beforeend',BT.join(''));
 }
