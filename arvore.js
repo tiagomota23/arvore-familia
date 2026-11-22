@@ -485,19 +485,21 @@ function showSibs(id,tk,tin,stay,pick,kind){
   const rightSide=bt.dataset.side==='r';
   // ordem do mais velho para o mais novo, com dia e mês quando a árvore os tem (nascimento; senão batismo; senão o ano mostrado)
   const yr=x=>{const z=BY[x]||{},F=z.f||[];for(const tp of [['Nascimento'],['Batizado','Batismo']]){const f=F.find(g=>tp.includes(g.tipo)&&/\d{4}/.test(g.data||''));if(f){const m=/(\d{1,2})\/(\d{1,2})\/(\d{4})|(\d{1,2})\/(\d{4})|(\d{4})/.exec(f.data);return m[3]?+m[3]*10000+m[2]*100+ +m[1]:m[5]?+m[5]*10000+m[4]*100:+m[6]*10000}}const m=/\d{4}/.exec(z.nb||'');return m?+m[0]*10000:99999999};
-  const L=kind==='cj'?[...((tin._cjl||{})[tk]||[])]:kind==='as'?[...((tin._asl||{})[tk]||[])]:[...(q.ir||[]).filter(kOk)].sort((a,b)=>yr(a)-yr(b));
+  const L=kind==='cj'?[...((tin._cjl||{})[tk]||[])]:kind==='as'?[...((tin._asl||{})[tk]||[])]:kind==='ds'?[...((tin._dsl||{})[tk]||[])].sort((a,b)=>yr(a)-yr(b)):[...(q.ir||[]).filter(kOk)].sort((a,b)=>yr(a)-yr(b));
   const old=tin.querySelector('.sibrow'),again=old&&old.dataset.tk===tk&&old.dataset.kind===kind;
-  tin.querySelectorAll('.sibrow').forEach(e=>e.remove());tin.querySelectorAll('.sibsel').forEach(e=>e.classList.remove('sibsel'));tin.querySelectorAll('.tmbtn.on').forEach(e=>e.classList.remove('on'));if(tin.style.paddingLeft||tin.style.paddingTop){tin.style.paddingLeft='';tin.style.paddingTop='';tin._draw&&tin._draw()}
+  tin.querySelectorAll('.sibrow').forEach(e=>e.remove());tin.querySelectorAll('.sibsel').forEach(e=>e.classList.remove('sibsel'));tin.querySelectorAll('.tmbtn.on').forEach(e=>e.classList.remove('on'));if(tin.style.paddingLeft||tin.style.paddingTop||tin.style.paddingBottom){tin.style.paddingLeft='';tin.style.paddingTop='';tin.style.paddingBottom='';tin._draw&&tin._draw()}
   if(again||!L.length)return;
   // o próprio botão «irmãos» é a ligação: a faixa abre logo à esquerda dele, à altura da caixa da pessoa
   const el=document.createElement('div');el.className='sibrow';el.dataset.tk=tk;el.dataset.kind=kind;el.style.cssText='left:0;top:0;visibility:hidden';
-  el.innerHTML=`<div class="sibhd"><span>${kind==='as'?'Ascendentes':kind==='cj'?((tin._cjo||{})[tk]?'Outros cônjuges':'Cônjuges'):esc(L.length&&L.every(x=>BY[x]?.s==='F')?'Irmãs':'Irmãos')} de ${esc(q.n)} (${L.length})</span><button type="button" class="sibx" aria-label="Fechar">✕</button></div><div class="sibcols">${L.map(x=>tbox(x,'')).join('')}</div>`;
+  el.innerHTML=`<div class="sibhd"><span>${kind==='as'?'Ascendentes':kind==='ds'?'Descendentes':kind==='cj'?((tin._cjo||{})[tk]?'Outros cônjuges':'Cônjuges'):esc(L.length&&L.every(x=>BY[x]?.s==='F')?'Irmãs':'Irmãos')} de ${esc(q.n)} (${L.length})</span><button type="button" class="sibx" aria-label="Fechar">✕</button></div><div class="sibcols">${L.map(x=>tbox(x,'')).join('')}</div>`;
   bx.classList.add('sibsel');bt.classList.add('on');tin.appendChild(el);if(window.APP&&APP.media)APP.media(el);
   const f=el.querySelector('.tb'),PAD=14,GAP=6,w0=Math.max(200,[...el.querySelectorAll('.sibcols .tb')].reduce((a,x)=>a+x.getBoundingClientRect().width,0)+(L.length-1)*8+PAD);   // soma das larguras reais (as caixas com foto são mais largas)
-  if(kind==='as'){   // a faixa dos ascendentes abre por cima do botão, que fica por cima da caixa do cônjuge
-    el.style.width=w0+'px';const h=el.getBoundingClientRect().height,btn=()=>tin.querySelector(`.tm-as[data-tk="${tk}"]`);
-    let O1=tin.getBoundingClientRect(),bb=btn().getBoundingClientRect(),topY=bb.top-O1.top-GAP-h;
-    if(topY<6){tin.style.paddingTop=Math.ceil(6-topY)+'px';tin._draw&&tin._draw();O1=tin.getBoundingClientRect();bb=btn().getBoundingClientRect();topY=bb.top-O1.top-GAP-h}
+  if(kind==='as'||kind==='ds'){   // as faixas dos ascendentes/descendentes abrem por cima/por baixo do botão
+    el.style.width=w0+'px';const h=el.getBoundingClientRect().height,btn=()=>tin.querySelector(`.tm-${kind}[data-tk="${tk}"]`);
+    let O1=tin.getBoundingClientRect(),bb=btn().getBoundingClientRect(),topY;
+    if(kind==='as'){topY=bb.top-O1.top-GAP-h;
+      if(topY<6){tin.style.paddingTop=Math.ceil(parseFloat(getComputedStyle(tin).paddingTop)+6-topY)+'px';tin._draw&&tin._draw();O1=tin.getBoundingClientRect();bb=btn().getBoundingClientRect();topY=bb.top-O1.top-GAP-h}}
+    else{topY=bx.getBoundingClientRect().bottom-O1.top+GAP;const falta=topY+h+6-O1.height;if(falta>0){tin.style.paddingBottom=Math.ceil(parseFloat(getComputedStyle(tin).paddingBottom)+falta)+'px';O1=tin.getBoundingClientRect()}}
     el.style.left=Math.max(0,bx.getBoundingClientRect().left-O1.left)+'px';el.style.top=topY+'px';el.style.visibility='';
     try{el.scrollIntoView({block:'nearest',inline:'nearest'})}catch(e){}
   }else{
@@ -509,9 +511,10 @@ function showSibs(id,tk,tin,stay,pick,kind){
   el.style.width=w+'px';
   const e0=el.getBoundingClientRect(),f0=f.getBoundingClientRect(),r=bx.getBoundingClientRect(),O2=tin.getBoundingClientRect();
   el.style.left=(rightSide?b0.right-O2.left+GAP:bl-GAP-w)+'px';el.style.top=(r.top-O2.top-(f0.top-e0.top))+'px';el.style.visibility='';
+  {const t0=parseFloat(el.style.top);if(t0<4){const dl=Math.ceil(4-t0);tin.style.paddingTop=(parseFloat(getComputedStyle(tin).paddingTop)+dl)+'px';tin._draw&&tin._draw();el.style.top=(t0+dl)+'px'}}   // o cabeçalho da faixa não pode ficar por cima do topo da árvore
   {const tr=tin.parentElement,a=tr.getBoundingClientRect(),b=el.getBoundingClientRect();if(b.left<a.left+8)tr.scrollLeft-=a.left+8-b.left;else if(b.right>a.right-8)tr.scrollLeft+=b.right-a.right+8}
   }
-  el.addEventListener('click',e=>{if(e.target.closest('.sibx')){el.remove();tin.querySelectorAll('.sibsel').forEach(z=>z.classList.remove('sibsel'));tin.querySelectorAll('.tmbtn.on').forEach(z=>z.classList.remove('on'));if(tin.style.paddingLeft||tin.style.paddingTop){tin.style.paddingLeft='';tin.style.paddingTop='';tin._draw&&tin._draw()}return}const g=e.target.closest('[data-go]');if(g){pick(BY[g.dataset.go]?.id);return}const a=e.target.closest('[data-anc]');if(a)stay(BY[a.dataset.anc].id)});
+  el.addEventListener('click',e=>{if(e.target.closest('.sibx')){el.remove();tin.querySelectorAll('.sibsel').forEach(z=>z.classList.remove('sibsel'));tin.querySelectorAll('.tmbtn.on').forEach(z=>z.classList.remove('on'));if(tin.style.paddingLeft||tin.style.paddingTop||tin.style.paddingBottom){tin.style.paddingLeft='';tin.style.paddingTop='';tin.style.paddingBottom='';tin._draw&&tin._draw()}return}const g=e.target.closest('[data-go]');if(g){pick(BY[g.dataset.go]?.id);return}const a=e.target.closest('[data-anc]');if(a)stay(BY[a.dataset.anc].id)});
 }
 function renderTree(){
   // centro: o perfil ativo (a ficha aberta); a âncora só define o título, o âmbito e os parentescos
@@ -525,7 +528,7 @@ function renderTree(){
   // cada geração ocupa a mesma largura: os pais ficam centrados por cima do filho
   const up=rows.map((r,k)=>`<div class="tgrp"><div class="tlab">${LBLG[k]}</div><div class="trow" style="width:${W}px;grid-template-columns:repeat(${r.length},1fr)">${r.map((i,j)=>{const ch=k?rows[k-1][j>>1]:A;return ch===null?'<div></div>':tbox(i,'',`a${k}_${j}`)}).join('')}</div></div>`).reverse().join('');
   const sps=kCj(A),fl0=kFl(A);
-  // os filhos ficam junto do cônjuge de quem são filhos (à esquerda, sem cônjuge mostrado ao meio, à direita) e a linha sai do traço entre os dois pais (artifact v132)
+  // os filhos ficam junto do cônjuge de quem são filhos (à esquerda, sem cônjuge mostrado ao meio, à direita) e a linha sai do traço entre os dois pais (Tiago, 22/11)
   const oth=c=>kPa(c).find(x=>x!==A&&sps.includes(x)),rk=c=>{const o=oth(c);return o===undefined?1:sps.indexOf(o)%2?0:2};
   const fl=fl0.map((c,i)=>[c,i]).sort((a,b)=>rk(a[0])-rk(b[0])||a[1]-b[1]).map(x=>x[0]);
   const fg=fl.map(c=>{const o=oth(c);return o===undefined?null:'s'+sps.indexOf(o)});
@@ -548,33 +551,37 @@ function renderTree(){
   const pick=id=>{if(id===undefined)return;if(id===A)go(id);else recentra(id)};
   const recentra=id=>{CUR=id;document.querySelectorAll('.row').forEach(r=>r.setAttribute('aria-current',r.dataset.id==String(id)));renderTree()};
   $('#main').querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>{const p=BY[b.dataset.go];if(!p)return;if(p.id===A){go(p.id);return}recentra(p.id)});
-  // «▲ mais ascendentes» / «▼ mais descendentes» recentram a árvore (na webapp o centro é o perfil ativo); «◀ N irmãos» abre a caixa dos irmãos (artifact v121)
-  $('#tin').addEventListener('click',ev=>{const b=ev.target.closest('.tmbtn');if(!b)return;const m=/^(a|g)(\d+)_(\d+)$/.exec(b.dataset.tk)||[],act=b.dataset.act;let id=null;
-    if(act==='up'&&m[1]==='a')id=rows[0][+m[3]>>+m[2]];
-    else if(act==='dn'&&m[1]==='g')id=fl[+m[2]];
-    else if(act==='sib'){const e=sibs.find(z=>z[0]===b.dataset.tk);if(e)showSibs(e[1],b.dataset.tk,$('#tin'),stay,pick,'sib');return}
-    else if(act==='cj'){const k=b.dataset.tk;const e=cjb.find(z=>z[0]===k);if(e)showSibs(e[1],k,$('#tin'),stay,pick,'cj');return}
-    else if(act==='as'){const e=asb.find(z=>z[0]===b.dataset.tk);if(e)showSibs(e[1],b.dataset.tk,$('#tin'),stay,pick,'as');return}
-    if(id!==null&&id!==undefined&&BY[id])recentra(id)});
   // mudar a âncora aqui não sai da vista árvore: o endereço fica sempre em #arvore
   const stay=id=>{if(location.hash==='#arvore')setAnchor(id);else{setAnchor(id,true);location.hash='arvore'}};
   $('#main').querySelectorAll('[data-anc]').forEach(b=>b.onclick=()=>stay(BY[b.dataset.anc].id));
   const r2=$('#ancreset2');if(r2)r2.onclick=()=>stay(null);
   window.APP.media($('#main'));
-  // «outros cônjuges» (artifact v135): cônjuges de quem está na árvore que a árvore não mostra (pais/avós, cônjuges do centro, cônjuges dos filhos e netos)
+  // botões da árvore (artifact v145): irmãos, cônjuges, ascendentes e descendentes abrem faixas; não mudam o centro nem a âncora
+  {const tin0=$('#tin');tin0.addEventListener('click',ev=>{const b=ev.target.closest('.tmbtn');if(!b)return;const m=/^(a|g)(\d+)_(\d+)$/.exec(b.dataset.tk)||[],act=b.dataset.act;let id=null;
+    if(act==='ds'){const e=dsb.find(z=>z[0]===b.dataset.tk);if(e)showSibs(e[1],b.dataset.tk,tin0,stay,pick,'ds');return}
+    else if(act==='sib'){const e=sibs.find(z=>z[0]===b.dataset.tk);if(e)showSibs(e[1],b.dataset.tk,tin0,stay,pick,'sib');return}
+    else if(act==='as'){const e=asb.find(z=>z[0]===b.dataset.tk);if(e)showSibs(e[1],b.dataset.tk,tin0,stay,pick,'as');return}
+    else if(act==='cj'){const k=b.dataset.tk;const e=cjb.find(z=>z[0]===k);if(e)showSibs(e[1],k,tin0,stay,pick,'cj');return}
+    if(id!==null&&id!==undefined&&BY[id])recentra(id)})}
+  // «outros cônjuges»: cônjuges de quem está na árvore que a árvore não mostra (os dos pais/avós, dos cônjuges da âncora, dos cônjuges dos filhos e dos netos)
   const shown=new Set([A,...sps,...fl,...rows.flat().filter(x=>x!==null),...fl.flatMap(c=>kCj(c)),...fl.flatMap(c=>kFl(c))]),cjb=[],cjl={},cjo={};
   const addcj=(tk,x,side)=>{if(x===null||x===undefined)return;const L=kCj(x).filter(y=>!shown.has(y));if(L.length){const ja=kCj(x).some(y=>shown.has(y));   // «outro(s) cônjuge(s)» só se já se mostra algum cônjuge da pessoa
     cjl[tk]=L;cjo[tk]=ja;cjb.push([tk,x,`${L.length>1?L.length+' ':''}${ja?(L.length>1?'outros cônjuges':'outro cônjuge'):(L.length>1?'cônjuges':'cônjuge')} ${side==='l'?'◀':'▶'}`,side])}};
   rows.forEach((r,k)=>r.forEach((x,j)=>addcj(`a${k}_${j}`,x,'r')));sps.forEach((x,i)=>addcj(`s${i}`,x,i%2?'l':'r'));
   fl.forEach((c,i)=>{kCj(c).forEach((x,j)=>addcj(`c${i}s${j}`,x,'r'));kFl(c).forEach((g,j)=>addcj(`g${i}_${j}`,g,'r'))});
+  // «descendentes»: filhos de quem está na árvore que a árvore não mostra (antepassados, cônjuges, cônjuges dos filhos e netos)
+  const dsb=[],dsl={};{const addds=(tk,x)=>{if(x===null||x===undefined)return;const D2=kFl(x).filter(y=>!shown.has(y));if(D2.length){dsl[tk]=D2;dsb.push([tk,x])}};
+    rows.forEach((r,k)=>r.forEach((x,j)=>addds(`a${k}_${j}`,x)));sps.forEach((x,i)=>addds(`s${i}`,x));fl.forEach((c,i)=>{kCj(c).forEach((x,j)=>addds(`c${i}s${j}`,x));kFl(c).forEach((g,j)=>addds(`g${i}_${j}`,g))})}
+  // botões dentro das caixas (irmãos, cônjuges, descendentes), um por baixo do outro, por baixo do «ancorar aqui» (Tiago, 22/11)
+  const slots={};sibs.forEach(z=>(slots[z[0]]=slots[z[0]]||[]).push('sib'));cjb.forEach(z=>(slots[z[0]]=slots[z[0]]||[]).push('cj'));dsb.forEach(z=>(slots[z[0]]=slots[z[0]]||[]).push('ds'));
+  const insb=slots;
+  Object.keys(slots).forEach(tk=>{const e=document.querySelector(`#tin [data-tk="${tk}"]`);if(e)e.style.paddingBottom=(6+24*slots[tk].length)+'px'});
+  const tin=$('#tin');tin._draw=()=>draw();const draw=()=>treeLines(tin,rows,sps.length,fl.map(c=>[kCj(c).length,kFl(c).length]),upMore,dnMore,sibs,fg,cjb,insb,asb,dsb);
   // «ascendentes» dos cônjuges (da âncora e dos filhos): os pais deles, se houver na árvore
   const asb=[],asl={};const addas=(tk,x)=>{if(x===null||x===undefined)return;const P2=kPa(x);if(P2.length){asl[tk]=P2;asb.push([tk,x])}};
   sps.forEach((x,i)=>addas(`s${i}`,x));fl.forEach((c,i)=>kCj(c).forEach((x,j)=>addas(`c${i}s${j}`,x)));
-  const tin=$('#tin');tin._cjl=cjl;tin._cjo=cjo;tin._asl=asl;tin._draw=()=>draw();const draw=()=>treeLines(tin,rows,sps.length,fl.map(c=>[kCj(c).length,kFl(c).length]),upMore,dnMore,sibs,fg,cjb,insb,asb);
-  // botão «irmãos» sem espaço até à caixa vizinha (fila de 200px): passa para dentro da caixa, por baixo do «ancorar aqui» (artifact v138)
-  const insb={};sibs.forEach(([tk])=>{insb[tk]=1});   // todos os botões «irmãos» ficam dentro das caixas (Tiago, 22/11)
-  const dentro=new Set([...cjb.map(z=>z[0]),...Object.keys(insb)]);   // espaço dentro da caixa para os botões «irmãos»/«cônjuges»
-  dentro.forEach(tk=>{const e=document.querySelector(`#tin [data-tk="${tk}"]`);if(e){e.classList.add('hascj');if(insb[tk]&&cjb.some(z=>z[0]===tk))e.classList.add('hascj2')}});
+  upMore.forEach(tk=>{const m=/^a(\d+)_(\d+)$/.exec(tk);if(m)addas(tk,rows[+m[1]][+m[2]])});   // ascendentes dos antepassados de topo
+  tin._cjl=cjl;tin._cjo=cjo;tin._asl=asl;tin._dsl=dsl;
   draw();
   if(TREE_RO)TREE_RO.disconnect();
   if(window.ResizeObserver){TREE_RO=new ResizeObserver(draw);TREE_RO.observe(tin)}
@@ -582,7 +589,7 @@ function renderTree(){
   const tr=tin.parentElement,rb=tin.querySelector('[data-tk="r"]');
   if(rb&&tr.scrollWidth>tr.clientWidth)tr.scrollLeft=rb.offsetLeft+rb.offsetWidth/2-tr.clientWidth/2;
 }
-function treeLines(tin,rows,nsp,fl,upMore,dnMore,sibs,fg,cjb,insb,asb){
+function treeLines(tin,rows,nsp,fl,upMore,dnMore,sibs,fg,cjb,insb,asb,dsb){
   const svg=tin.querySelector('#tsvg');if(!svg||!tin.isConnected)return;
   const O=tin.getBoundingClientRect();
   const R=tk=>{const e=tin.querySelector(`[data-tk="${tk}"]`);if(!e)return null;const r=e.getBoundingClientRect();return {l:r.left-O.left,r:r.right-O.left,t:r.top-O.top,b:r.bottom-O.top,cx:(r.left+r.right)/2-O.left,cy:(r.top+r.bottom)/2-O.top,el:e}};
@@ -595,8 +602,7 @@ function treeLines(tin,rows,nsp,fl,upMore,dnMore,sibs,fg,cjb,insb,asb){
   rows.forEach((r,k)=>{for(let j=0;j<r.length;j+=2){const ch=R(k?`a${k-1}_${j>>1}`:'r');fam([R(`a${k}_${j}`),R(`a${k}_${j+1}`)],ch)}});
   // casamento da âncora: traço entre os cônjuges
   const rt=R('r');
-  for(let i=0;i<nsp;i++){const s=R(`s${i}`),inn=i<2?rt:R(`s${i-2}`);if(s&&inn)C.push(i%2?`M${s.r},${s.cy}H${inn.l}`:`M${inn.r},${s.cy}H${s.l}`)}   // cônjuges dos dois lados do centro (1.º à direita, 2.º à esquerda…), ligados a ele (artifact v131)
-  // filhos: descem do meio do casal
+  for(let i=0;i<nsp;i++){const s=R(`s${i}`),inn=i<2?rt:R(`s${i-2}`);if(s&&inn)C.push(i%2?`M${s.r},${s.cy}H${inn.l}`:`M${inn.r},${s.cy}H${s.l}`)}   // cônjuges de um lado e do outro da âncora (1.º à direita, 2.º à esquerda…), ligados a ela
   // filhos: descem do meio do traço entre a pessoa e o cônjuge de quem são filhos (ou da pessoa, se o outro progenitor não é um cônjuge mostrado)
   if(rt&&fl.length){for(const g of [...new Set(fg||[])]){
     const ks=fl.map((c,i)=>fg[i]===g?R(`c${i}`):null).filter(Boolean);if(!ks.length)continue;
@@ -611,17 +617,16 @@ function treeLines(tin,rows,nsp,fl,upMore,dnMore,sibs,fg,cjb,insb,asb){
     if(!gs.length)return;
     const s0=ns?R(`c${i}s0`):null,x0=s0?(ck.r+s0.l)/2:ck.cx,y0=s0?ck.cy:ck.b,y=Math.min(...gs.map(g=>g.t))-11,xs=gs.map(g=>g.cx).concat([x0]);
     P.push(`M${x0},${y0}V${y}`,`M${Math.min(...xs)},${y}H${Math.max(...xs)}`);for(const g of gs)P.push(`M${g.cx},${y}V${g.t}`)});
-  svg.setAttribute('width',tin.scrollWidth);svg.setAttribute('height',tin.scrollHeight);
   const BT=[];
-  for(const tk of upMore||[]){const b=R(tk);if(!b)continue;BT.push(`<button type="button" class="tmbtn tm-up" data-act="up" data-tk="${tk}" style="left:${b.cx}px;top:${b.t-26}px">▲ ascendentes</button>`)}
-  for(const tk of dnMore||[]){const b=R(tk);if(!b)continue;BT.push(`<button type="button" class="tmbtn tm-dn" data-act="dn" data-tk="${tk}" style="left:${b.cx}px;top:${b.b+8}px">▼ descendentes</button>`)}
-  const comCj=new Set((cjb||[]).map(z=>z[0]));
-  for(const [tk,id,n,sd] of sibs||[]){const b=R(tk);if(!b)continue;const lft=tk==='r'&&nsp>=2?R(`s${nsp%2?nsp-2:nsp-1}`):null;   // com cônjuges à esquerda da âncora, o botão fica à esquerda do mais afastado
-    const dent=insb&&insb[tk];
-    BT.push(dent?`<button type="button" class="tmbtn tm-sib" data-act="sib" data-tk="${tk}" data-in="1" data-side="${sd||'l'}" style="${sd==='r'?`left:${b.r-7}px;transform:translateX(-100%)`:`transform:none;left:${b.l+7}px`};top:${b.b-(comCj.has(tk)?51:27)}px" title="Mostrar os irmãos">${sd==='r'?`${n} ▶`:`◀ ${n}`}</button>`:`<button type="button" class="tmbtn tm-sib" data-act="sib" data-tk="${tk}" style="left:${(lft?lft.l:b.l)-4}px;top:${b.cy-11}px" title="Mostrar os irmãos">◀ ${n}</button>`)}
-  for(const [tk,id,lab,side] of cjb||[]){const b=R(tk);if(!b)continue;BT.push(`<button type="button" class="tmbtn tm-cj" data-act="cj" data-tk="${tk}" data-side="${side}" style="left:${b.r-7}px;top:${b.b-27}px;transform:translateX(-100%)" title="Mostrar os cônjuges">${lab}</button>`)}
+  const pos=(tk,kind)=>{const sl=insb&&insb[tk]||[],n=sl.length,i=sl.indexOf(kind);return 6+24*(n-i)};   // distância do fundo da caixa ao fundo do botão... (ver top)
+  for(const [tk,id,n,sd] of sibs||[]){const b=R(tk);if(!b)continue;
+    const lft=tk==='r'&&nsp>=2?R(`s${nsp%2?nsp-2:nsp-1}`):null;void lft;
+    BT.push(`<button type="button" class="tmbtn tm-sib" data-act="sib" data-tk="${tk}" data-in="1" data-side="${sd||'l'}" style="${sd==='r'?`left:${b.r-7}px;transform:translateX(-100%)`:`transform:none;left:${b.l+7}px`};top:${b.b-pos(tk,'sib')-2}px" title="Mostrar os irmãos">${sd==='r'?`${n} ▶`:`◀ ${n}`}</button>`)}
+  for(const [tk,id,lab,side] of cjb||[]){const b=R(tk);if(!b)continue;BT.push(`<button type="button" class="tmbtn tm-cj" data-act="cj" data-tk="${tk}" data-side="${side}" style="left:${b.r-7}px;top:${b.b-pos(tk,'cj')-2}px;transform:translateX(-100%)" title="Mostrar os cônjuges">${lab}</button>`)}
+  for(const [tk,id] of dsb||[]){const b=R(tk);if(!b)continue;BT.push(`<button type="button" class="tmbtn tm-ds" data-act="ds" data-tk="${tk}" data-in="1" style="left:${b.r-7}px;top:${b.b-pos(tk,'ds')-2}px;transform:translateX(-100%)" title="Mostrar os descendentes">▼ descendentes</button>`)}
   for(const [tk,id] of asb||[]){const b=R(tk);if(!b)continue;BT.push(`<button type="button" class="tmbtn tm-as" data-act="as" data-tk="${tk}" style="left:${b.cx}px;top:${b.t-26}px;transform:translateX(-50%)" title="Mostrar os ascendentes">▲ ascendentes</button>`)}
-  svg.innerHTML=`<path d="${P.join('')}"/>`+(C.length?`<path class="cj" d="${C.join('')}"/>`:'');
+  svg.setAttribute('width',tin.scrollWidth);svg.setAttribute('height',tin.scrollHeight);
+  svg.innerHTML=`<path d="${P.join('')}"/>`+(C.length?`<path class="cj" d="${C.join('')}"/>`:'')+'';
   tin.querySelectorAll('.tmbtn').forEach(e=>e.remove());tin.insertAdjacentHTML('beforeend',BT.join(''));
   {const o=tin.querySelector('.sibrow');if(o){const b=tin.querySelector(`.tm-${o.dataset.kind||'sib'}[data-tk="${o.dataset.tk}"]`);if(b)b.classList.add('on')}}
 }
