@@ -474,18 +474,24 @@ function tbox(id,cls,tk){
 let TREE_RO=null;
 // irmã/irmãs só quando todos os irmãos mostrados são do sexo feminino (Tiago, 22/11)
 const irmL=(L,n)=>{const f=L.length>0&&L.every(x=>BY[x]?.s==='F');return n===1?(f?'irmã':'irmão'):(f?'irmãs':'irmãos')};
-// «irmãos»: caixa sobreposta à árvore com a pessoa e as fichas dos irmãos; não muda a âncora (Tiago, 22/11)
-function showSibs(id){
-  const q=BY[id];if(!q)return;
+// «irmãos»: os irmãos abrem ao lado da pessoa, que fica no mesmo sítio, com as mesmas caixas da árvore, lado a lado; não muda a âncora (Tiago, 22/11; artifact v122)
+function showSibs(id,tk,tin,stay,pick){
+  const q=BY[id],bx=tin.querySelector(`[data-tk="${tk}"]`);if(!q||!bx)return;
   const yr=x=>{const m=/\d{4}/.exec(BY[x]?.nb||'');return m?+m[0]:99999};
   const L=[...(q.ir||[]).filter(kOk)].sort((a,b)=>yr(a)-yr(b));
-  const card=(x,me)=>{const z=BY[x];return `<div class="sibcard${me?' me':''} sx-${esc(z.s||'')}"><button class="tn" data-go="${esc(z.id)}">${esc(z.n)}</button><small>${z.nb?'n. '+esc(z.nb):'n. ?'}${z.nm?' · † '+esc(z.nm):''}</small><small>${esc(z.pr||'')}</small>${me?'<small><b>esta pessoa</b></small>':''}</div>`};
-  document.querySelectorAll('.sibov').forEach(e=>e.remove());
-  const ov=document.createElement('div');ov.className='sibov';ov.setAttribute('role','dialog');ov.setAttribute('aria-label',(L.length&&L.every(x=>BY[x]?.s==='F')?'Irmãs':'Irmãos')+' de '+q.n);
-  ov.innerHTML=`<div class="sibbox"><div class="sibhd"><div><h3>${L.length&&L.every(x=>BY[x]?.s==='F')?'Irmãs':'Irmãos'} de ${esc(q.n)}</h3><div class="muted">${L.length} ${irmL(L,L.length)}${(q.ir||[]).length>L.length?' (mais '+((q.ir||[]).length-L.length)+' fora do âmbito)':''}</div></div><button type="button" class="linkbtn sibx">fechar ✕</button></div><div class="sibgrid">${card(id,true)}${L.map(x=>card(x,false)).join('')}</div></div>`;
-  const close=()=>{ov.remove();document.removeEventListener('keydown',kd)},kd=e=>{if(e.key==='Escape')close()};
-  ov.addEventListener('click',e=>{if(e.target===ov||e.target.closest('.sibx'))close();const g=e.target.closest('[data-go]');if(g){close();go(g.dataset.go)}});
-  document.addEventListener('keydown',kd);document.body.appendChild(ov);
+  const old=tin.querySelector('.sibrow'),again=old&&old.dataset.tk===tk;tin.querySelectorAll('.sibrow').forEach(e=>e.remove());tin.querySelectorAll('.sibsel').forEach(e=>e.classList.remove('sibsel'));
+  if(again||!L.length)return;
+  const O=tin.getBoundingClientRect(),r=bx.getBoundingClientRect(),l=r.left-O.left,t=r.top-O.top,need=L.length*158;
+  const left=l-8>=need;   // irmãos à esquerda se couber; senão à direita (a árvore alarga para a direita e deixa-se rolar)
+  const me=`<div class="sibme" style="width:${r.width}px">${tbox(id,'')}</div>`;
+  const el=document.createElement('div');el.className='sibrow';el.dataset.tk=tk;el.style.cssText='left:0;top:0;visibility:hidden';
+  el.innerHTML=`<div class="sibhd">${esc(L.length&&L.every(x=>BY[x]?.s==='F')?'Irmãs':'Irmãos')} de ${esc(q.n)} (${L.length}) <button type="button" class="sibx" aria-label="Fechar">✕</button></div>${left?L.map(x=>tbox(x,'')).join('')+me:me+L.map(x=>tbox(x,'')).join('')}`;
+  bx.classList.add('sibsel');tin.appendChild(el);if(window.APP&&APP.media)APP.media(el);
+  // a própria pessoa fica exatamente no mesmo sítio; os irmãos abrem para o lado
+  {const pc=el.querySelector('.sibme .tb'),e0=el.getBoundingClientRect(),p0=pc.getBoundingClientRect();pc.style.width=r.width+'px';
+    el.style.left=(l-(p0.left-e0.left))+'px';el.style.top=(t-(p0.top-e0.top))+'px';el.style.visibility=''}
+  {const tr=tin.parentElement,a=tr.getBoundingClientRect(),b=el.getBoundingClientRect();if(b.left<a.left+8)tr.scrollLeft-=a.left+8-b.left;else if(b.right>a.right-8)tr.scrollLeft+=b.right-a.right+8}
+  el.addEventListener('click',e=>{if(e.target.closest('.sibx')){el.remove();bx.classList.remove('sibsel');return}const g=e.target.closest('[data-go]');if(g){pick(BY[g.dataset.go]?.id);return}const a=e.target.closest('[data-anc]');if(a)stay(BY[a.dataset.anc].id)});
 }
 function renderTree(){
   // centro: o perfil ativo (a ficha aberta); a âncora só define o título, o âmbito e os parentescos
@@ -519,7 +525,7 @@ function renderTree(){
   $('#tin').addEventListener('click',ev=>{const b=ev.target.closest('.tmbtn');if(!b)return;const m=/^(a|g)(\d+)_(\d+)$/.exec(b.dataset.tk)||[],act=b.dataset.act;let id=null;
     if(act==='up'&&m[1]==='a')id=rows[0][+m[3]>>+m[2]];
     else if(act==='dn'&&m[1]==='g')id=fl[+m[2]];
-    else if(act==='sib'){const x=b.dataset.tk==='r'?A:rows[+m[2]][+m[3]];showSibs(x);return}
+    else if(act==='sib'){const x=b.dataset.tk==='r'?A:rows[+m[2]][+m[3]];showSibs(x,b.dataset.tk,$('#tin'),stay,id=>{if(id===undefined)return;if(id===A)go(id);else recentra(id)});return}
     if(id!==null&&id!==undefined&&BY[id])recentra(id)});
   // mudar a âncora aqui não sai da vista árvore: o endereço fica sempre em #arvore
   const stay=id=>{if(location.hash==='#arvore')setAnchor(id);else{setAnchor(id,true);location.hash='arvore'}};
