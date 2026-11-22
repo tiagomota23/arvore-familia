@@ -493,6 +493,7 @@ function showSibs(id,tk,tin,stay,pick,kind){
   const el=document.createElement('div');el.className='sibrow';el.dataset.tk=tk;el.dataset.kind=kind;el.style.cssText='left:0;top:0;visibility:hidden';
   el.innerHTML=`<div class="sibhd"><span>${kind==='as'?'Ascendentes':kind==='ds'?((tin._dso||{})[tk]?'Outros descendentes':'Descendentes'):kind==='cj'?((tin._cjo||{})[tk]?'Outros cônjuges':'Cônjuges'):esc(L.length&&L.every(x=>BY[x]?.s==='F')?'Irmãs':'Irmãos')} de ${esc(q.n)} (${L.length})</span><button type="button" class="sibx" aria-label="Fechar">✕</button></div><div class="sibcols">${L.map(x=>tbox(x,'')).join('')}</div>`;
   bx.classList.add('sibsel');bt.classList.add('on');tin.appendChild(el);if(window.APP&&APP.media)APP.media(el);
+  for(const q of tin._path||[]){if(q.tk===tk&&q.kind===kind){const a=el.querySelector(`[data-anc="${q.id}"]`),t=a&&a.closest('.tb');if(t)t.classList.add('tb-path')}}
   const f=el.querySelector('.tb'),PAD=14,GAP=6,w0=Math.max(200,[...el.querySelectorAll('.sibcols .tb')].reduce((a,x)=>a+x.getBoundingClientRect().width,0)+(L.length-1)*8+PAD);   // soma das larguras reais (as caixas com foto são mais largas)
   if(kind==='as'||kind==='ds'){   // as faixas dos ascendentes/descendentes abrem por cima/por baixo do botão
     el.style.width=w0+'px';const h=el.getBoundingClientRect().height,btn=()=>tin.querySelector(`.tm-${kind}[data-tk="${tk}"]`);
@@ -583,6 +584,17 @@ function renderTree(){
   sps.forEach((x,i)=>addas(`s${i}`,x));fl.forEach((c,i)=>kCj(c).forEach((x,j)=>addas(`c${i}s${j}`,x)));
   upMore.forEach(tk=>{const m=/^a(\d+)_(\d+)$/.exec(tk);if(m)addas(tk,rows[+m[1]][+m[2]])});   // ascendentes dos antepassados de topo
   tin._cjl=cjl;tin._cjo=cjo;tin._asl=asl;tin._dsl=dsl;tin._dso=dso;
+  // caminho mais curto até «quem sou eu» (quando a âncora é outra pessoa): o botão por onde se sai da árvore fica a vermelho (Tiago, 22/11)
+  tin._path=null;if(EGO!==A&&BY[EGO]&&!shown.has(EGO)){const tkOf=new Map([[A,'r']]);rows.forEach((r,k)=>r.forEach((x,j)=>{if(x!==null)tkOf.set(x,`a${k}_${j}`)}));sps.forEach((x,i)=>tkOf.set(x,`s${i}`));
+    fl.forEach((c,i)=>{tkOf.set(c,`c${i}`);kCj(c).forEach((x,j)=>tkOf.set(x,`c${i}s${j}`));kFl(c).forEach((g,j)=>tkOf.set(g,`g${i}_${j}`))});
+    const has=new Set([...sibs.map(z=>z[0]+'|sib'),...cjb.map(z=>z[0]+'|cj'),...dsb.map(z=>z[0]+'|ds'),...asb.map(z=>z[0]+'|as')]);
+    const irm=x=>(BY[x]?.ir||[]).filter(kOk),nb=y=>[...kPa(y).map(x=>[x,'ds']),...kFl(y).map(x=>[x,'as']),...kCj(y).map(x=>[x,'cj']),...irm(y).map(x=>[x,'sib'])];   // y é filho/pai/cônjuge/irmão de x → botão de x
+    const seen=new Set([EGO]);let fr=[EGO];
+    const hit=[];   // empates: ficam todos os caminhos com o mesmo comprimento (Tiago, 22/11)
+    while(fr.length&&!hit.length){const nx=[];for(const y of fr){for(const [x,kd] of nb(y)){if(seen.has(x))continue;
+      if(shown.has(x)){const tk=tkOf.get(x);if(tk&&has.has(tk+'|'+kd))hit.push({tk,kind:kd,id:y});continue}
+      seen.add(x);nx.push(x)}}fr=nx}
+    if(hit.length)tin._path=hit}
   draw();
   if(TREE_RO)TREE_RO.disconnect();
   if(window.ResizeObserver){TREE_RO=new ResizeObserver(draw);TREE_RO.observe(tin)}
@@ -630,6 +642,7 @@ function treeLines(tin,rows,nsp,fl,upMore,dnMore,sibs,fg,cjb,insb,asb,dsb){
   svg.innerHTML=`<path d="${P.join('')}"/>`+(C.length?`<path class="cj" d="${C.join('')}"/>`:'')+'';
   tin.querySelectorAll('.tmbtn').forEach(e=>e.remove());tin.insertAdjacentHTML('beforeend',BT.join(''));
   {const o=tin.querySelector('.sibrow');if(o){const b=tin.querySelector(`.tm-${o.dataset.kind||'sib'}[data-tk="${o.dataset.tk}"]`);if(b)b.classList.add('on')}}
+  for(const q of tin._path||[]){const b=tin.querySelector(`.tm-${q.kind}[data-tk="${q.tk}"]`);if(b&&!b.classList.contains('tm-path')){b.classList.add('tm-path');b.title+=' — caminho até quem sou eu'}}
 }
 function setEgo(id){if(!GESTOR)return;EGO=id;try{localStorage.setItem('arv-ego',JSON.stringify(id))}catch(e){}applyEgo();list();route()}
 function initEgo(){
