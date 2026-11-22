@@ -606,6 +606,7 @@ function renderTree(){
   sps.forEach((x,i)=>addas(`s${i}`,x));fl.forEach((c,i)=>kCj(c).forEach((x,j)=>addas(`c${i}s${j}`,x)));
   upMore.forEach(tk=>{const m=/^a(\d+)_(\d+)$/.exec(tk);if(m)addas(tk,rows[+m[1]][+m[2]])});xkind.forEach((k,y)=>{if(k==='as')addas('x_'+y,y)});   // ascendentes dos antepassados de topo
   tin._bands=[...bands.values()];tin._xg=tin._bands.flatMap(b=>b.groups);
+  tin._cgrp=[...new Set(fg)].map(g=>({g,ks:fl.map((c,i)=>fg[i]===g?`c${i}`:null).filter(Boolean)}));   // filhos de cada casal da âncora
   tin._cjl=cjl;tin._cjo=cjo;tin._asl=asl;tin._dsl=dsl;tin._dso=dso;
   // caminho mais curto da âncora até à pessoa base (Tiago, 22/11): as linhas da árvore nesse caminho ficam a vermelho; onde o caminho sai da árvore, o botão fica a vermelho; nos empates ficam todos
   tin._path=null;if(EGO!==A&&BY[EGO]&&!shown.has(EGO)){const has=new Set([...sibs.map(z=>z[0]+'|sib'),...cjb.map(z=>z[0]+'|cj'),...dsb.map(z=>z[0]+'|ds'),...asb.map(z=>z[0]+'|as')]);
@@ -629,12 +630,28 @@ function renderTree(){
 }
 function layBands(tin,again){again=again||0;
   let need=0;
+  // a âncora e o cônjuge ficam centrados entre os vários filhos (Tiago, 22/11)
+  {const tc=tin.querySelector('.tcenter');if(tc){tc.style.transform='';const G=tin._cgrp||[];
+    if(G.length===1&&G[0].ks.length>1){const rt=tin.querySelector('[data-tk="r"]'),g=G[0].g,Q=e=>e&&e.getBoundingClientRect(),r=Q(rt),ks=G[0].ks.map(k=>Q(tin.querySelector(`.tunit [data-tk="${k}"]`))).filter(Boolean);let x0=r.left+r.width/2;
+      if(g){const sp=Q(tin.querySelector(`[data-tk="${g}"]`)),n=+g.slice(1),inn=n<2?r:Q(tin.querySelector(`[data-tk="s${n-2}"]`));if(sp&&inn){const dir=sp.left+sp.width/2>inn.left+inn.width/2;x0=((dir?inn.right:sp.right)+(dir?sp.left:inn.left))/2}}
+      if(ks.length>1){const dx=(Math.min(...ks.map(k=>k.left+k.width/2))+Math.max(...ks.map(k=>k.left+k.width/2)))/2-x0;if(Math.abs(dx)>.5){tc.style.transform=`translateX(${dx}px)`;need=Math.max(need,tin.getBoundingClientRect().left+4-tc.firstElementChild.getBoundingClientRect().left)}}}}}
   for(const b of tin._bands||[]){const el=tin.querySelector(`.tband[data-band="${b.id}"]`);if(!el)continue;el.style.marginLeft=tin._padL&&!tin.querySelector('.sibrow')?-tin._padL+'px':'';const E=el.getBoundingClientRect();let H=0,right=-1e9;
     const G=b.groups.map(g=>{const f=tin.querySelector(`[data-tk="${g.fromTk}"]`),fr=f&&f.getBoundingClientRect(),bx=g.ids.map(y=>el.querySelector(`[data-tk="x_${y}"]`)).filter(Boolean),ws=bx.map(e=>e.offsetWidth);
       return {cx:fr?(fr.left+fr.right)/2-E.left:E.width/2,off:g.kind==='as'&&bx.length===2?ws[0]+8:null,bx,ws,w:ws.reduce((a,x)=>a+x,0)+Math.max(0,bx.length-1)*16}}).sort((a,c)=>a.cx-c.cx);
     if(G.length)need=Math.max(need,4-(G[0].cx-(G[0].off??G[0].w/2)));   // o grupo centrado sobre quem o pediu não cabe à esquerda: a árvore desloca-se para a direita
     for(const g of G){const l=Math.max(g.cx-(g.off??g.w/2),right+24,4);let x=l;g.bx.forEach((e,i)=>{e.style.left=x+'px';e.style.top='30px';x+=g.ws[i]+16;H=Math.max(H,e.offsetHeight)});right=l+g.w}
     el.style.height=(H+60)+'px'}
+  // pais/filhos abertos na linha de outra geração: ficam por cima/por baixo de quem os pediu (o meio do casal na vertical da pessoa), sem tapar as caixas vizinhas
+  {const O=tin.getBoundingClientRect(),rds=(tin._bands||[]).filter(b=>b.id.startsWith('rd:')),box=g=>g.ids.map(y=>tin.querySelector(`[data-tk="x_${y}"]`)).filter(Boolean);
+    rds.forEach(b=>b.groups.forEach(g=>box(g).forEach(e=>{e.style.transform=''})));
+    const ord=rds.flatMap(b=>b.groups).sort((a,c)=>{const f=x=>{const e=tin.querySelector(`[data-tk="x_${x.ids[0]}"]`);return e?e.getBoundingClientRect().left:0};return f(a)-f(c)});
+    for(const g of ord){const f=tin.querySelector(`[data-tk="${g.fromTk}"]`),bx=box(g);if(!f||!bx.length)continue;
+      const F=f.getBoundingClientRect(),r0=bx[0].getBoundingClientRect(),r1=bx[bx.length-1].getBoundingClientRect(),mid=bx.length===2?(r0.right+r1.left)/2:(r0.left+r1.right)/2;let dx=(F.left+F.right)/2-mid;
+      const host=e=>e.parentElement.classList.contains('tcenter')?e:e.parentElement,h0=host(bx[0]),sib=[...h0.parentElement.children].filter(c=>c.style.gridRow===h0.style.gridRow&&!bx.some(e=>host(e)===c)).map(c=>c.getBoundingClientRect());
+      if(dx>0){const nx=sib.filter(r=>r.left>=r1.right-1).map(r=>r.left);if(nx.length)dx=Math.min(dx,Math.max(0,Math.min(...nx)-16-r1.right))}
+      else{const pv=sib.filter(r=>r.right<=r0.left+1).map(r=>r.right);if(pv.length)dx=-Math.min(-dx,Math.max(0,r0.left-16-Math.max(...pv)))}
+      if(Math.abs(dx)>.5)bx.forEach(e=>e.style.transform=`translateX(${dx}px)`);
+      need=Math.max(need,O.left+4-(r0.left+dx))}}
   if(need>.5&&again<4){tin._padL=(tin._padL||0)+Math.ceil(need);if(!tin.querySelector('.sibrow'))tin.style.paddingLeft=tin._padL+'px';layBands(tin,again+1)}
 }
 function treeLines(tin,rows,nsp,fl,upMore,dnMore,sibs,fg,cjb,insb,asb,dsb){
@@ -658,7 +675,11 @@ function treeLines(tin,rows,nsp,fl,upMore,dnMore,sibs,fg,cjb,insb,asb,dsb){
     if(rt0&&fl.length)for(const g of [...new Set(fg||[])]){const ix=fl.map((c,i)=>fg[i]===g?i:-1).filter(i=>i>=0);if(ix.length!==1)continue;const k=R(`c${ix[0]}`);if(!k)continue;
       let x0=rt0.cx;if(g){const sp=R(g),n=+g.slice(1),inn=n<2?rt0:R(`s${n-2}`);if(sp&&inn){const dir=sp.cx>inn.cx;x0=((dir?inn.r:sp.r)+(dir?sp.l:inn.l))/2}}
       sh(k.el.closest('.tunit'),x0-k.cx)}
-    fl.forEach(([ns,ng,lf],i)=>{if(ng!==1)return;const ck=R(`c${i}`),g=R(`g${i}_0`),s0=ns?R(`c${i}s0`):null;if(!ck||!g)return;sh(g.el,(s0?(lf?(s0.r+ck.l)/2:(ck.r+s0.l)/2):ck.cx)-g.cx)})}
+    fl.forEach(([ns,ng,lf],i)=>{if(!ng)return;const ck=R(`c${i}`),gs=[];for(let j=0;j<ng;j++){const g=R(`g${i}_${j}`);if(g)gs.push(g)}if(!ck||!gs.length)return;const s0=ns?R(`c${i}s0`):null;
+      const x0=s0?(lf?(s0.r+ck.l)/2:(ck.r+s0.l)/2):ck.cx,cell=gs[0].el.parentElement;let dx=x0-(Math.min(...gs.map(g=>g.l))+Math.max(...gs.map(g=>g.r)))/2;   // os netos ficam centrados por baixo do casal
+      const me=cell.getBoundingClientRect(),pe=[...cell.parentElement.children].filter(c=>c!==cell&&c.style.gridRow===cell.style.gridRow).map(c=>c.getBoundingClientRect());
+      if(dx>0){const nx=pe.filter(q=>q.left>=me.right-1).map(q=>q.left);if(nx.length)dx=Math.min(dx,Math.max(0,Math.min(...nx)-10-me.right))}else{const pv=pe.filter(q=>q.right<=me.left+1).map(q=>q.right);if(pv.length)dx=-Math.min(-dx,Math.max(0,me.left-10-Math.max(...pv)))}
+      sh(cell,dx)})}
   // casamento da âncora: traço entre os cônjuges
   const rt=R('r');
   for(let i=0;i<nsp;i++){const s=R(`s${i}`),inn=i<2?rt:R(`s${i-2}`);if(s&&inn)C.push(i%2?`M${s.r},${my(s,inn)}H${inn.l}`:`M${inn.r},${my(s,inn)}H${s.l}`)}   // cônjuges de um lado e do outro da âncora (1.º à direita, 2.º à esquerda…), ligados a ela
