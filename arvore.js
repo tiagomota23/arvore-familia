@@ -511,7 +511,11 @@ function renderTree(){
   const CELL=200,W=rows.length?CELL*rows[rows.length-1].length:0;
   // cada geração ocupa a mesma largura: os pais ficam centrados por cima do filho
   const up=rows.map((r,k)=>`<div class="tgrp"><div class="tlab">${LBLG[k]}</div><div class="trow" style="width:${W}px;grid-template-columns:repeat(${r.length},1fr)">${r.map((i,j)=>{const ch=k?rows[k-1][j>>1]:A;return ch===null?'<div></div>':tbox(i,'',`a${k}_${j}`)}).join('')}</div></div>`).reverse().join('');
-  const sps=kCj(A),fl=kFl(A);
+  const sps=kCj(A),fl0=kFl(A);
+  // os filhos ficam junto do cônjuge de quem são filhos (à esquerda, sem cônjuge mostrado ao meio, à direita) e a linha sai do traço entre os dois pais (artifact v132)
+  const oth=c=>kPa(c).find(x=>x!==A&&sps.includes(x)),rk=c=>{const o=oth(c);return o===undefined?1:sps.indexOf(o)%2?0:2};
+  const fl=fl0.map((c,i)=>[c,i]).sort((a,b)=>rk(a[0])-rk(b[0])||a[1]-b[1]).map(x=>x[0]);
+  const fg=fl.map(c=>{const o=oth(c);return o===undefined?null:'s'+sps.indexOf(o)});
   // há mais gente para lá do que se mostra: linha tracejada para cima (pais dos bisavós) e para baixo (filhos dos netos)
   const topK=rows.length-1,upMore=rows.length&&topK===2?rows[topK].map((i,j)=>i!==null&&kPa(i).length?`a${topK}_${j}`:null).filter(Boolean):[];
   const sibs=[];{const nir=x=>x===null||x===undefined?0:(BY[x]?.ir||[]).filter(kOk).length,lbl=x=>{const L=(BY[x]?.ir||[]).filter(kOk);return `${L.length} ${irmL(L,L.length)}`};
@@ -539,7 +543,7 @@ function renderTree(){
   $('#main').querySelectorAll('[data-anc]').forEach(b=>b.onclick=()=>stay(BY[b.dataset.anc].id));
   const r2=$('#ancreset2');if(r2)r2.onclick=()=>stay(null);
   window.APP.media($('#main'));
-  const tin=$('#tin');tin._draw=()=>draw();const draw=()=>treeLines(tin,rows,sps.length,fl.map(c=>[kCj(c).length,kFl(c).length]),upMore,dnMore,sibs);
+  const tin=$('#tin');tin._draw=()=>draw();const draw=()=>treeLines(tin,rows,sps.length,fl.map(c=>[kCj(c).length,kFl(c).length]),upMore,dnMore,sibs,fg);
   draw();
   if(TREE_RO)TREE_RO.disconnect();
   if(window.ResizeObserver){TREE_RO=new ResizeObserver(draw);TREE_RO.observe(tin)}
@@ -547,7 +551,7 @@ function renderTree(){
   const tr=tin.parentElement,rb=tin.querySelector('[data-tk="r"]');
   if(rb&&tr.scrollWidth>tr.clientWidth)tr.scrollLeft=rb.offsetLeft+rb.offsetWidth/2-tr.clientWidth/2;
 }
-function treeLines(tin,rows,nsp,fl,upMore,dnMore,sibs){
+function treeLines(tin,rows,nsp,fl,upMore,dnMore,sibs,fg){
   const svg=tin.querySelector('#tsvg');if(!svg||!tin.isConnected)return;
   const O=tin.getBoundingClientRect();
   const R=tk=>{const e=tin.querySelector(`[data-tk="${tk}"]`);if(!e)return null;const r=e.getBoundingClientRect();return {l:r.left-O.left,r:r.right-O.left,t:r.top-O.top,b:r.bottom-O.top,cx:(r.left+r.right)/2-O.left,cy:(r.top+r.bottom)/2-O.top,el:e}};
@@ -562,10 +566,13 @@ function treeLines(tin,rows,nsp,fl,upMore,dnMore,sibs){
   const rt=R('r');
   for(let i=0;i<nsp;i++){const s=R(`s${i}`),inn=i<2?rt:R(`s${i-2}`);if(s&&inn)C.push(i%2?`M${s.r},${s.cy}H${inn.l}`:`M${inn.r},${s.cy}H${s.l}`)}   // cônjuges dos dois lados do centro (1.º à direita, 2.º à esquerda…), ligados a ele (artifact v131)
   // filhos: descem do meio do casal
-  if(rt&&fl.length){const s0=R('s0'),x0=s0?(rt.r+s0.l)/2:rt.cx,y0=s0?rt.cy:rt.b;
-    const ks=fl.map((c,i)=>R(`c${i}`)).filter(Boolean);
-    if(ks.length){const y=Math.min(...ks.map(k=>k.t))-11,xs=ks.map(k=>k.cx).concat([x0]);
-      P.push(`M${x0},${y0}V${y}`,`M${Math.min(...xs)},${y}H${Math.max(...xs)}`);for(const k of ks)P.push(`M${k.cx},${y}V${k.t}`)}}
+  // filhos: descem do meio do traço entre a pessoa e o cônjuge de quem são filhos (ou da pessoa, se o outro progenitor não é um cônjuge mostrado)
+  if(rt&&fl.length){for(const g of [...new Set(fg||[])]){
+    const ks=fl.map((c,i)=>fg[i]===g?R(`c${i}`):null).filter(Boolean);if(!ks.length)continue;
+    let x0=rt.cx,y0=rt.b;
+    if(g){const sp=R(g),n=+g.slice(1),inn=n<2?rt:R(`s${n-2}`);if(sp&&inn){const dir=sp.cx>inn.cx;x0=((dir?inn.r:sp.r)+(dir?sp.l:inn.l))/2;y0=sp.cy}}
+    const y=Math.min(...ks.map(k=>k.t))-11,xs=ks.map(k=>k.cx).concat([x0]);
+    P.push(`M${x0},${y0}V${y}`,`M${Math.min(...xs)},${y}H${Math.max(...xs)}`);for(const k of ks)P.push(`M${k.cx},${y}V${k.t}`)}}
   // casamentos dos filhos e netos: descem do meio de cada casal
   fl.forEach(([ns,ng],i)=>{const ck=R(`c${i}`);if(!ck)return;
     for(let j=0;j<ns;j++){const s=R(`c${i}s${j}`),prev=j?R(`c${i}s${j-1}`):ck;if(s&&prev)C.push(`M${prev.r},${s.cy}H${s.l}`)}
