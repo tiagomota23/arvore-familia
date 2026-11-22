@@ -600,7 +600,7 @@ function renderTree(){
   const insb=slots;
   Object.keys(slots).forEach(tk=>{const e=document.querySelector(`#tin [data-tk="${tk}"]`);if(e)e.style.paddingBottom=(6+24*slots[tk].length)+'px'});
   dsb.forEach(([tk])=>{const e=document.querySelector(`#tin [data-tk="${tk}"]`);if(e)e.style.marginBottom='28px'});   // espaço para o botão «descendentes», que fica por baixo da caixa
-  const tin=$('#tin'),draw=(n)=>{layBands(tin);treeLines(tin,rows,sps.length,fl.map(c=>[kCj(c).length,kFl(c).length,lsp(c)]),upMore,dnMore,sibs,fg,cjb,insb,asb,dsb);
+  const tin=$('#tin'),draw=(n)=>{const pass=()=>{layBands(tin);treeLines(tin,rows,sps.length,fl.map(c=>[kCj(c).length,kFl(c).length,lsp(c)]),upMore,dnMore,sibs,fg,cjb,insb,asb,dsb)};pass();pass();pass();   // 2.ª e 3.ª passagens: os deslocamentos de centragem dos filhos mudam a posição de quem pediu os pais
     // nenhuma caixa pode ficar cortada à esquerda por causa dos deslocamentos de centragem: a árvore ganha padding-left
     n=typeof n==='number'?n:0;if(n<5){const O=tin.getBoundingClientRect();let m=1e9;tin.querySelectorAll('.tb').forEach(e=>{if(!e.closest('.sibrow'))m=Math.min(m,e.getBoundingClientRect().left-O.left)});
       if(m<4){tin._padL=(tin._padL||0)+Math.ceil(4-m);if(!tin.querySelector('.sibrow'))tin.style.paddingLeft=tin._padL+'px';draw(n+1)}}};
@@ -632,9 +632,17 @@ function renderTree(){
   if(TREE_LAST_A!==null&&TREE_LAST_A!==A&&rb)requestAnimationFrame(()=>rb.scrollIntoView({block:'center',inline:'center',behavior:'smooth'}));
   TREE_LAST_A=A;
 }
-function layBands(tin,again){again=again||0;
-  let need=0,gapN=0;
+function layBands(tin,again){again=again||0;if(!again){tin._lastGap=undefined;tin._gapStop=false}
+  let need=0,gapN=0,ugN=0,ugK=null;
+  for(const [k,v] of Object.entries(tin._ug||{})){const e=tin.querySelector(`.tunit [data-tk="${k}"]`),u=e&&e.closest('.tunit');if(u)u.style.gap=(28+v)+'px'}   // mais distância entre o filho e o cônjuge, para os pais deste caberem por cima dele sem tapar a âncora
   {const kd=tin.querySelector('.tkids');if(kd)kd.style.columnGap=tin._gapX?(26+tin._gapX)+'px':''}   // folga extra entre os filhos, se for preciso para centrar cada filho por baixo dos pais
+  tin.querySelectorAll('.tcenter>[data-tk]').forEach(e=>{e.style.transform=''});   // parte-se sempre do zero: os deslocamentos da passagem anterior não podem contaminar as medições
+  // pais abertos de um filho (ou do cônjuge dele) ficam do lado da linha da âncora mais próximo desse filho (decidido pela posição real)
+  {const tc=tin.querySelector('.tcenter');if(tc){const rg=(tin._bands||[]).filter(b=>b.id==='rd:anc').flatMap(b=>b.groups).filter(g=>/^c\d+/.test(g.fromTk)),kc=[...tin.querySelectorAll('.tunit>[data-tk]')].filter(e=>/^c\d+$/.test(e.dataset.tk)).map(e=>{const q=e.getBoundingClientRect();return q.left+q.width/2-(parseFloat((/translateX\((-?[\d.]+)px/.exec(e.closest('.tunit').style.transform)||[])[1])||0)});
+      if(rg.length&&kc.length){const mid=(Math.min(...kc)+Math.max(...kc))/2;rg.forEach(g=>g.ids.forEach(y=>{const e=tin.querySelector(`[data-tk="x_${y}"]`);if(e)e.style.transform=''}));
+        const items=rg.map(g=>{const f=tin.querySelector(`[data-tk="${g.fromTk}"]`),q=f&&f.getBoundingClientRect(),bx=g.ids.map(y=>tin.querySelector(`[data-tk="x_${y}"]`)).filter(Boolean);return {g,bx,cx:q?q.left+q.width/2-(parseFloat((/translateX\((-?[\d.]+)px/.exec((f.closest('.tunit')||{style:{}}).style.transform)||[])[1])||0):0}}).sort((a,c)=>a.cx-c.cx);
+        const anc=[...tc.children].filter(e=>!(e.dataset.tk||'').startsWith('x_')),first=anc[0],last=anc[anc.length-1];let lastR=last;
+        for(const it of items){const left=it.cx<mid;it.g.side=left?'l':'r';if(left)it.bx.forEach(e=>tc.insertBefore(e,first));else it.bx.forEach(e=>{tc.insertBefore(e,lastR.nextSibling);lastR=e})}}}}
   // a âncora e o cônjuge ficam centrados entre os vários filhos (Tiago, 22/11)
   {const tc=tin.querySelector('.tcenter');if(tc){tc.style.transform='';const G=tin._cgrp||[];
     if(G.length===1&&G[0].ks.length>1){const rt=tin.querySelector('[data-tk="r"]'),g=G[0].g,Q=e=>e&&e.getBoundingClientRect(),r=Q(rt),ks=G[0].ks.map(k=>Q(tin.querySelector(`.tunit [data-tk="${k}"]`))).filter(Boolean);let x0=r.left+r.width/2;
@@ -649,16 +657,27 @@ function layBands(tin,again){again=again||0;
   // pais/filhos abertos na linha de outra geração: ficam por cima/por baixo de quem os pediu (o meio do casal na vertical da pessoa), sem tapar as caixas vizinhas
   {const O=tin.getBoundingClientRect(),rds=(tin._bands||[]).filter(b=>b.id.startsWith('rd:')),box=g=>g.ids.map(y=>tin.querySelector(`[data-tk="x_${y}"]`)).filter(Boolean);
     rds.forEach(b=>b.groups.forEach(g=>box(g).forEach(e=>{e.style.transform=''})));
+    tin.querySelectorAll('.tcenter>[data-tk]').forEach(e=>{e.style.transform=''});
     const ord=rds.flatMap(b=>b.groups).sort((a,c)=>{const f=x=>{const e=tin.querySelector(`[data-tk="x_${x.ids[0]}"]`);return e?e.getBoundingClientRect().left:0};return f(a)-f(c)});
     for(const g of ord){const f=tin.querySelector(`[data-tk="${g.fromTk}"]`),bx=box(g);if(!f||!bx.length)continue;
       const F=f.getBoundingClientRect(),r0=bx[0].getBoundingClientRect(),r1=bx[bx.length-1].getBoundingClientRect(),mid=bx.length===2?(r0.right+r1.left)/2:(r0.left+r1.right)/2;let dx=(F.left+F.right)/2-mid;
       const host=e=>e.parentElement.classList.contains('tcenter')?e:e.parentElement,h0=host(bx[0]),sib=[...h0.parentElement.children].filter(c=>c.style.gridRow===h0.style.gridRow&&!bx.some(e=>host(e)===c)).map(c=>c.getBoundingClientRect());
+      if(bx[0].parentElement.classList.contains('tcenter')){   // linha da âncora: o filho manda; o que estiver no caminho (a âncora, o cônjuge, outros pais) é empurrado para o lado
+        const tr=(e,d)=>{const m=/translateX\((-?[\d.]+)px/.exec(e.style.transform||'');e.style.transform=`translateX(${(m?+m[1]:0)+d}px)`};
+        const els=[...h0.parentElement.children].filter(c=>!bx.includes(c));
+        const um=/^(c\d+)s\d+$/.exec(g.fromTk);
+        if(dx>0){const nx=els.filter(e=>e.getBoundingClientRect().left>=r1.right-1),L=nx.length?Math.min(...nx.map(e=>e.getBoundingClientRect().left)):1e9,push=Math.max(0,r1.right+dx+16-L);if(push>0){if(um&&!(tin._cgrp||[]).some(q=>q.ks.length>1)){ugN=Math.max(ugN,push);ugK=um[1];dx=Math.max(0,dx-push)}else if(nx.some(e=>(e.dataset.tk||'').startsWith('x_'))){gapN=Math.max(gapN,push);dx=Math.max(0,dx-push)}else nx.forEach(e=>tr(e,push))}}
+        else if(dx<0){const pv=els.filter(e=>e.getBoundingClientRect().right<=r0.left+1),R2=pv.length?Math.max(...pv.map(e=>e.getBoundingClientRect().right)):-1e9,push=Math.max(0,R2+16-(r0.left+dx));if(push>0){if(um&&!(tin._cgrp||[]).some(q=>q.ks.length>1)){ugN=Math.max(ugN,push);ugK=um[1];dx=Math.min(0,dx+push)}else if(pv.some(e=>(e.dataset.tk||'').startsWith('x_'))){gapN=Math.max(gapN,push);dx=Math.min(0,dx+push)}else pv.forEach(e=>tr(e,-push))}}}
+      else
       if(dx>0){const nx=sib.filter(r=>r.left>=r1.right-1).map(r=>r.left);if(nx.length)dx=Math.min(dx,Math.max(0,Math.min(...nx)-16-r1.right))}
       else{const pv=sib.filter(r=>r.right<=r0.left+1).map(r=>r.right);if(pv.length)dx=-Math.min(-dx,Math.max(0,r0.left-16-Math.max(...pv)))}
       {const want=(F.left+F.right)/2-mid;if(Math.abs(want-dx)>.5&&h0.classList.contains('tcenter')||Math.abs(want-dx)>.5&&bx[0].parentElement.classList.contains('tcenter'))gapN=Math.max(gapN,Math.abs(want-dx))}
       if(Math.abs(dx)>.5)bx.forEach(e=>e.style.transform=`translateX(${dx}px)`);
       need=Math.max(need,O.left+4-(r0.left+dx))}}
-  if(gapN>.5&&again<10){tin._gapX=(tin._gapX||0)+Math.ceil(gapN*2);layBands(tin,again+1);return}
+  if(ugN>.5&&again<10&&(tin._ug&&tin._ug[ugK]||0)<700){tin._ug=tin._ug||{};tin._ug[ugK]=(tin._ug[ugK]||0)+Math.ceil(ugN);layBands(tin,again+1);return}
+  if(gapN>.5&&again<10&&!tin._gapStop){   // só se a folga ajudar de facto (senão desfaz e pára)
+    if(tin._lastGap!==undefined&&gapN>=tin._lastGap-1){tin._gapX=Math.max(0,(tin._gapX||0)-tin._lastInc);tin._gapStop=true;layBands(tin,again+1);return}
+    tin._lastGap=gapN;tin._lastInc=Math.min(Math.ceil(gapN*2),600);tin._gapX=Math.min((tin._gapX||0)+tin._lastInc,900);layBands(tin,again+1);return}
   if(need>.5&&again<10){tin._padL=(tin._padL||0)+Math.ceil(need);if(!tin.querySelector('.sibrow'))tin.style.paddingLeft=tin._padL+'px';layBands(tin,again+1)}
 }
 function treeLines(tin,rows,nsp,fl,upMore,dnMore,sibs,fg,cjb,insb,asb,dsb){
