@@ -472,6 +472,21 @@ function tbox(id,cls,tk){
   return `<div class="tb ${cls||''}${ft?' hasft':''} sx-${esc(q.s||'')}"${k}>${ft}<button class="tn" data-go="${esc(q.id)}">${esc(q.n)}</button><small>${q.nb?'n. '+esc(q.nb):'n. ?'}${q.nm?' · † '+esc(q.nm):''}</small><small>${esc(q.pr||'')}</small>${cls==='root'?`<button class="ta" data-go="${esc(q.id)}">abrir a ficha</button>`:!GESTOR?'':`<button class="ta" data-anc="${esc(q.id)}">⚓ ancorar aqui</button>`}</div>`;
 }
 let TREE_RO=null;
+// irmã/irmãs só quando todos os irmãos mostrados são do sexo feminino (Tiago, 22/11)
+const irmL=(L,n)=>{const f=L.length>0&&L.every(x=>BY[x]?.s==='F');return n===1?(f?'irmã':'irmão'):(f?'irmãs':'irmãos')};
+// «irmãos»: caixa sobreposta à árvore com a pessoa e as fichas dos irmãos; não muda a âncora (Tiago, 22/11)
+function showSibs(id){
+  const q=BY[id];if(!q)return;
+  const yr=x=>{const m=/\d{4}/.exec(BY[x]?.nb||'');return m?+m[0]:99999};
+  const L=[...(q.ir||[]).filter(kOk)].sort((a,b)=>yr(a)-yr(b));
+  const card=(x,me)=>{const z=BY[x];return `<div class="sibcard${me?' me':''} sx-${esc(z.s||'')}"><button class="tn" data-go="${esc(z.id)}">${esc(z.n)}</button><small>${z.nb?'n. '+esc(z.nb):'n. ?'}${z.nm?' · † '+esc(z.nm):''}</small><small>${esc(z.pr||'')}</small>${me?'<small><b>esta pessoa</b></small>':''}</div>`};
+  document.querySelectorAll('.sibov').forEach(e=>e.remove());
+  const ov=document.createElement('div');ov.className='sibov';ov.setAttribute('role','dialog');ov.setAttribute('aria-label',(L.length&&L.every(x=>BY[x]?.s==='F')?'Irmãs':'Irmãos')+' de '+q.n);
+  ov.innerHTML=`<div class="sibbox"><div class="sibhd"><div><h3>${L.length&&L.every(x=>BY[x]?.s==='F')?'Irmãs':'Irmãos'} de ${esc(q.n)}</h3><div class="muted">${L.length} ${irmL(L,L.length)}${(q.ir||[]).length>L.length?' (mais '+((q.ir||[]).length-L.length)+' fora do âmbito)':''}</div></div><button type="button" class="linkbtn sibx">fechar ✕</button></div><div class="sibgrid">${card(id,true)}${L.map(x=>card(x,false)).join('')}</div></div>`;
+  const close=()=>{ov.remove();document.removeEventListener('keydown',kd)},kd=e=>{if(e.key==='Escape')close()};
+  ov.addEventListener('click',e=>{if(e.target===ov||e.target.closest('.sibx'))close();const g=e.target.closest('[data-go]');if(g){close();go(g.dataset.go)}});
+  document.addEventListener('keydown',kd);document.body.appendChild(ov);
+}
 function renderTree(){
   // centro: o perfil ativo (a ficha aberta); a âncora só define o título, o âmbito e os parentescos
   if(!BY[CUR]||BY[CUR].del)CUR=ancA();
@@ -486,8 +501,8 @@ function renderTree(){
   const sps=kCj(A),fl=kFl(A);
   // há mais gente para lá do que se mostra: linha tracejada para cima (pais dos bisavós) e para baixo (filhos dos netos)
   const topK=rows.length-1,upMore=rows.length&&topK===2?rows[topK].map((i,j)=>i!==null&&kPa(i).length?`a${topK}_${j}`:null).filter(Boolean):[];
-  const sibs=[];{const nir=x=>x!==null&&x!==undefined?(BY[x]?.ir||[]).filter(kOk).length:0;
-    if(nir(A))sibs.push(['r',A,nir(A)]);rows.forEach((r,k)=>r.forEach((x,j)=>{const n=nir(x);if(n)sibs.push([`a${k}_${j}`,x,n])}))}
+  const sibs=[];{const nir=x=>x===null||x===undefined?0:(BY[x]?.ir||[]).filter(kOk).length,lbl=x=>{const L=(BY[x]?.ir||[]).filter(kOk);return `${L.length} ${irmL(L,L.length)}`};
+    if(nir(A))sibs.push(['r',A,lbl(A)]);rows.forEach((r,k)=>r.forEach((x,j)=>{if(nir(x))sibs.push([`a${k}_${j}`,x,lbl(x)])}))}
   const dnMore=[];fl.forEach((c,i)=>kFl(c).forEach((g,j)=>{if(kFl(g).length)dnMore.push(`g${i}_${j}`)}));
   const ng=fl.reduce((n,c)=>n+kFl(c).length,0);
   // uma geração por linha: filhos (com os cônjuges) numa linha, netos na linha de baixo, cada grupo por baixo dos pais
@@ -500,11 +515,11 @@ function renderTree(){
   // clicar num nome muda o perfil ativo e recentra a árvore; clicar no centro abre a ficha
   const recentra=id=>{CUR=id;document.querySelectorAll('.row').forEach(r=>r.setAttribute('aria-current',r.dataset.id==String(id)));renderTree()};
   $('#main').querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>{const p=BY[b.dataset.go];if(!p)return;if(p.id===A){go(p.id);return}recentra(p.id)});
-  // «mais ascendentes» / «mais descendentes» / «◀ irmãos» (como o artifact v119): recentram a árvore — na webapp o centro é o perfil ativo
+  // «▲ mais ascendentes» / «▼ mais descendentes» recentram a árvore (na webapp o centro é o perfil ativo); «◀ N irmãos» abre a caixa dos irmãos (artifact v121)
   $('#tin').addEventListener('click',ev=>{const b=ev.target.closest('.tmbtn');if(!b)return;const m=/^(a|g)(\d+)_(\d+)$/.exec(b.dataset.tk)||[],act=b.dataset.act;let id=null;
     if(act==='up'&&m[1]==='a')id=rows[0][+m[3]>>+m[2]];
     else if(act==='dn'&&m[1]==='g')id=fl[+m[2]];
-    else if(act==='sib'){const x=b.dataset.tk==='r'?A:rows[+m[2]][+m[3]];const ps=pais(x);id=ps[0]!==null?ps[0]:ps[1]}
+    else if(act==='sib'){const x=b.dataset.tk==='r'?A:rows[+m[2]][+m[3]];showSibs(x);return}
     if(id!==null&&id!==undefined&&BY[id])recentra(id)});
   // mudar a âncora aqui não sai da vista árvore: o endereço fica sempre em #arvore
   const stay=id=>{if(location.hash==='#arvore')setAnchor(id);else{setAnchor(id,true);location.hash='arvore'}};
@@ -546,11 +561,11 @@ function treeLines(tin,rows,nsp,fl,upMore,dnMore,sibs){
     const s0=ns?R(`c${i}s0`):null,x0=s0?(ck.r+s0.l)/2:ck.cx,y0=s0?ck.cy:ck.b,y=Math.min(...gs.map(g=>g.t))-11,xs=gs.map(g=>g.cx).concat([x0]);
     P.push(`M${x0},${y0}V${y}`,`M${Math.min(...xs)},${y}H${Math.max(...xs)}`);for(const g of gs)P.push(`M${g.cx},${y}V${g.t}`)});
   svg.setAttribute('width',tin.scrollWidth);svg.setAttribute('height',tin.scrollHeight);
-  const M=[],AW=[],BT=[];
-  for(const tk of upMore||[]){const b=R(tk);if(!b)continue;M.push(`M${b.cx},${b.t}V${b.t-26}`);AW.push(`M${b.cx},${b.t-32}l-5,8h10z`);BT.push(`<button type="button" class="tmbtn tm-up" data-act="up" data-tk="${tk}" style="left:${b.cx+8}px;top:${b.t-24}px">mais ascendentes</button>`)}
-  for(const tk of dnMore||[]){const b=R(tk);if(!b)continue;M.push(`M${b.cx},${b.b}V${b.b+26}`);AW.push(`M${b.cx},${b.b+32}l-5,-8h10z`);BT.push(`<button type="button" class="tmbtn tm-dn" data-act="dn" data-tk="${tk}" style="left:${b.cx+8}px;top:${b.b+8}px">mais descendentes</button>`)}
-  for(const [tk,,n] of sibs||[]){const b=R(tk);if(!b)continue;BT.push(`<button type="button" class="tmbtn tm-sib" data-act="sib" data-tk="${tk}" style="left:${b.l-4}px;top:${b.cy-11}px" title="Centrar nos pais para mostrar os irmãos">◀ ${n} irm${n===1?'ão':'ãos'}</button>`)}
-  svg.innerHTML=`<path d="${P.join('')}"/>`+(C.length?`<path class="cj" d="${C.join('')}"/>`:'')+(M.length?`<path class="more" d="${M.join('')}"/><path class="arw" d="${AW.join('')}"/>`:'');
+  const BT=[];
+  for(const tk of upMore||[]){const b=R(tk);if(!b)continue;BT.push(`<button type="button" class="tmbtn tm-up" data-act="up" data-tk="${tk}" style="left:${b.cx}px;top:${b.t-26}px">▲ mais ascendentes</button>`)}
+  for(const tk of dnMore||[]){const b=R(tk);if(!b)continue;BT.push(`<button type="button" class="tmbtn tm-dn" data-act="dn" data-tk="${tk}" style="left:${b.cx}px;top:${b.b+8}px">▼ mais descendentes</button>`)}
+  for(const [tk,,n] of sibs||[]){const b=R(tk);if(!b)continue;BT.push(`<button type="button" class="tmbtn tm-sib" data-act="sib" data-tk="${tk}" style="left:${b.l-4}px;top:${b.cy-11}px" title="Ver os irmãos">◀ ${n}</button>`)}
+  svg.innerHTML=`<path d="${P.join('')}"/>`+(C.length?`<path class="cj" d="${C.join('')}"/>`:'');
   tin.querySelectorAll('.tmbtn').forEach(e=>e.remove());tin.insertAdjacentHTML('beforeend',BT.join(''));
 }
 function setEgo(id){if(!GESTOR)return;EGO=id;try{localStorage.setItem('arv-ego',JSON.stringify(id))}catch(e){}applyEgo();list();route()}
