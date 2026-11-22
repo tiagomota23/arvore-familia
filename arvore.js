@@ -486,6 +486,8 @@ function renderTree(){
   const sps=kCj(A),fl=kFl(A);
   // há mais gente para lá do que se mostra: linha tracejada para cima (pais dos bisavós) e para baixo (filhos dos netos)
   const topK=rows.length-1,upMore=rows.length&&topK===2?rows[topK].map((i,j)=>i!==null&&kPa(i).length?`a${topK}_${j}`:null).filter(Boolean):[];
+  const sibs=[];{const has=x=>x!==null&&x!==undefined&&(BY[x]?.ir||[]).filter(kOk).length>0;
+    if(has(A))sibs.push(['r',A]);rows.forEach((r,k)=>r.forEach((x,j)=>{if(has(x))sibs.push([`a${k}_${j}`,x])}))}
   const dnMore=[];fl.forEach((c,i)=>kFl(c).forEach((g,j)=>{if(kFl(g).length)dnMore.push(`g${i}_${j}`)}));
   const ng=fl.reduce((n,c)=>n+kFl(c).length,0);
   // uma geração por linha: filhos (com os cônjuges) numa linha, netos na linha de baixo, cada grupo por baixo dos pais
@@ -496,13 +498,20 @@ function renderTree(){
    <div class="tgrp"><div class="tlab">Perfil ativo${sps.length?' e cônjuge':''}</div><div class="tcenter">${tbox(A,'root','r')}${sps.map((s,i)=>tbox(s,'',`s${i}`)).join('')}</div></div>
    <div class="tgrp"><div class="tlab">Filhos (${fl.length})</div>${fl.length?`<div class="tkids" style="grid-template-columns:repeat(${fl.length},auto)">${kids}</div>`:'<span class="muted">—</span>'}</div></div></div>`;
   // clicar num nome muda o perfil ativo e recentra a árvore; clicar no centro abre a ficha
-  $('#main').querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>{const p=BY[b.dataset.go];if(!p)return;if(p.id===A){go(p.id);return}CUR=p.id;document.querySelectorAll('.row').forEach(r=>r.setAttribute('aria-current',r.dataset.id==String(p.id)));renderTree()});
+  const recentra=id=>{CUR=id;document.querySelectorAll('.row').forEach(r=>r.setAttribute('aria-current',r.dataset.id==String(id)));renderTree()};
+  $('#main').querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>{const p=BY[b.dataset.go];if(!p)return;if(p.id===A){go(p.id);return}recentra(p.id)});
+  // «mais ascendentes» / «mais descendentes» / «◀ irmãos» (como o artifact v119): recentram a árvore — na webapp o centro é o perfil ativo
+  $('#tin').addEventListener('click',ev=>{const b=ev.target.closest('.tmbtn');if(!b)return;const m=/^(a|g)(\d+)_(\d+)$/.exec(b.dataset.tk)||[],act=b.dataset.act;let id=null;
+    if(act==='up'&&m[1]==='a')id=rows[0][+m[3]>>+m[2]];
+    else if(act==='dn'&&m[1]==='g')id=fl[+m[2]];
+    else if(act==='sib'){const x=b.dataset.tk==='r'?A:rows[+m[2]][+m[3]];const ps=pais(x);id=ps[0]!==null?ps[0]:ps[1]}
+    if(id!==null&&id!==undefined&&BY[id])recentra(id)});
   // mudar a âncora aqui não sai da vista árvore: o endereço fica sempre em #arvore
   const stay=id=>{if(location.hash==='#arvore')setAnchor(id);else{setAnchor(id,true);location.hash='arvore'}};
   $('#main').querySelectorAll('[data-anc]').forEach(b=>b.onclick=()=>stay(BY[b.dataset.anc].id));
   const r2=$('#ancreset2');if(r2)r2.onclick=()=>stay(null);
   window.APP.media($('#main'));
-  const tin=$('#tin'),draw=()=>treeLines(tin,rows,sps.length,fl.map(c=>[kCj(c).length,kFl(c).length]),upMore,dnMore);
+  const tin=$('#tin'),draw=()=>treeLines(tin,rows,sps.length,fl.map(c=>[kCj(c).length,kFl(c).length]),upMore,dnMore,sibs);
   draw();
   if(TREE_RO)TREE_RO.disconnect();
   if(window.ResizeObserver){TREE_RO=new ResizeObserver(draw);TREE_RO.observe(tin)}
@@ -510,7 +519,7 @@ function renderTree(){
   const tr=tin.parentElement,rb=tin.querySelector('[data-tk="r"]');
   if(rb&&tr.scrollWidth>tr.clientWidth)tr.scrollLeft=rb.offsetLeft+rb.offsetWidth/2-tr.clientWidth/2;
 }
-function treeLines(tin,rows,nsp,fl,upMore,dnMore){
+function treeLines(tin,rows,nsp,fl,upMore,dnMore,sibs){
   const svg=tin.querySelector('#tsvg');if(!svg||!tin.isConnected)return;
   const O=tin.getBoundingClientRect();
   const R=tk=>{const e=tin.querySelector(`[data-tk="${tk}"]`);if(!e)return null;const r=e.getBoundingClientRect();return {l:r.left-O.left,r:r.right-O.left,t:r.top-O.top,b:r.bottom-O.top,cx:(r.left+r.right)/2-O.left,cy:(r.top+r.bottom)/2-O.top,el:e}};
@@ -537,10 +546,12 @@ function treeLines(tin,rows,nsp,fl,upMore,dnMore){
     const s0=ns?R(`c${i}s0`):null,x0=s0?(ck.r+s0.l)/2:ck.cx,y0=s0?ck.cy:ck.b,y=Math.min(...gs.map(g=>g.t))-11,xs=gs.map(g=>g.cx).concat([x0]);
     P.push(`M${x0},${y0}V${y}`,`M${Math.min(...xs)},${y}H${Math.max(...xs)}`);for(const g of gs)P.push(`M${g.cx},${y}V${g.t}`)});
   svg.setAttribute('width',tin.scrollWidth);svg.setAttribute('height',tin.scrollHeight);
-  const M=[],AW=[],TX=[];
-  for(const tk of upMore||[]){const b=R(tk);if(!b)continue;M.push(`M${b.cx},${b.t}V${b.t-26}`);AW.push(`M${b.cx},${b.t-32}l-5,8h10z`);TX.push(`<text class="mt" x="${b.cx+9}" y="${b.t-14}">mais ascendentes</text>`)}
-  for(const tk of dnMore||[]){const b=R(tk);if(!b)continue;M.push(`M${b.cx},${b.b}V${b.b+26}`);AW.push(`M${b.cx},${b.b+32}l-5,-8h10z`);TX.push(`<text class="mt" x="${b.cx+9}" y="${b.b+20}">mais descendentes</text>`)}
-  svg.innerHTML=`<path d="${P.join('')}"/>`+(C.length?`<path class="cj" d="${C.join('')}"/>`:'')+(M.length?`<path class="more" d="${M.join('')}"/><path class="arw" d="${AW.join('')}"/>${TX.join('')}`:'');
+  const M=[],AW=[],BT=[];
+  for(const tk of upMore||[]){const b=R(tk);if(!b)continue;M.push(`M${b.cx},${b.t}V${b.t-26}`);AW.push(`M${b.cx},${b.t-32}l-5,8h10z`);BT.push(`<button type="button" class="tmbtn tm-up" data-act="up" data-tk="${tk}" style="left:${b.cx+8}px;top:${b.t-24}px">mais ascendentes</button>`)}
+  for(const tk of dnMore||[]){const b=R(tk);if(!b)continue;M.push(`M${b.cx},${b.b}V${b.b+26}`);AW.push(`M${b.cx},${b.b+32}l-5,-8h10z`);BT.push(`<button type="button" class="tmbtn tm-dn" data-act="dn" data-tk="${tk}" style="left:${b.cx+8}px;top:${b.b+8}px">mais descendentes</button>`)}
+  for(const [tk] of sibs||[]){const b=R(tk);if(!b)continue;BT.push(`<button type="button" class="tmbtn tm-sib" data-act="sib" data-tk="${tk}" style="left:${b.l-4}px;top:${b.cy-11}px" title="Centrar nos pais para mostrar os irmãos">◀ irmãos</button>`)}
+  svg.innerHTML=`<path d="${P.join('')}"/>`+(C.length?`<path class="cj" d="${C.join('')}"/>`:'')+(M.length?`<path class="more" d="${M.join('')}"/><path class="arw" d="${AW.join('')}"/>`:'');
+  tin.querySelectorAll('.tmbtn').forEach(e=>e.remove());tin.insertAdjacentHTML('beforeend',BT.join(''));
 }
 function setEgo(id){if(!GESTOR)return;EGO=id;try{localStorage.setItem('arv-ego',JSON.stringify(id))}catch(e){}applyEgo();list();route()}
 function initEgo(){
