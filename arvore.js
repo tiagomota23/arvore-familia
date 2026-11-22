@@ -474,24 +474,24 @@ function tbox(id,cls,tk){
 let TREE_RO=null;
 // irmã/irmãs só quando todos os irmãos mostrados são do sexo feminino (Tiago, 22/11)
 const irmL=(L,n)=>{const f=L.length>0&&L.every(x=>BY[x]?.s==='F');return n===1?(f?'irmã':'irmão'):(f?'irmãs':'irmãos')};
-// «irmãos»: os irmãos abrem ao lado da pessoa, que fica no mesmo sítio, com as mesmas caixas da árvore, lado a lado; não muda a âncora (Tiago, 22/11; artifact v122)
+// «irmãos»: os irmãos abrem ao lado da pessoa, que fica no mesmo sítio, com as mesmas caixas da árvore, lado a lado; não muda a âncora (Tiago, 22/11; artifact v123)
 function showSibs(id,tk,tin,stay,pick){
   const q=BY[id],bx=tin.querySelector(`[data-tk="${tk}"]`);if(!q||!bx)return;
   const yr=x=>{const m=/\d{4}/.exec(BY[x]?.nb||'');return m?+m[0]:99999};
   const L=[...(q.ir||[]).filter(kOk)].sort((a,b)=>yr(a)-yr(b));
-  const old=tin.querySelector('.sibrow'),again=old&&old.dataset.tk===tk;tin.querySelectorAll('.sibrow').forEach(e=>e.remove());tin.querySelectorAll('.sibsel').forEach(e=>e.classList.remove('sibsel'));
+  const old=tin.querySelector('.sibrow'),again=old&&old.dataset.tk===tk;tin.querySelectorAll('.sibrow,.siblink').forEach(e=>e.remove());tin.querySelectorAll('.sibsel').forEach(e=>e.classList.remove('sibsel'));
   if(again||!L.length)return;
-  const O=tin.getBoundingClientRect(),r=bx.getBoundingClientRect(),l=r.left-O.left,t=r.top-O.top,need=L.length*158;
-  const left=l-8>=need;   // irmãos à esquerda se couber; senão à direita (a árvore alarga para a direita e deixa-se rolar)
-  const me=`<div class="sibme" style="width:${r.width}px">${tbox(id,'')}</div>`;
+  const O=tin.getBoundingClientRect(),r=bx.getBoundingClientRect(),l=r.left-O.left,rr=r.right-O.left,t=r.top-O.top,G=16,need=L.length*158;
+  const left=l-G>=need;   // irmãos à esquerda se couberem; senão à direita (a árvore alarga para a direita e deixa-se rolar)
   const el=document.createElement('div');el.className='sibrow';el.dataset.tk=tk;el.style.cssText='left:0;top:0;visibility:hidden';
-  el.innerHTML=`<div class="sibhd">${esc(L.length&&L.every(x=>BY[x]?.s==='F')?'Irmãs':'Irmãos')} de ${esc(q.n)} (${L.length}) <button type="button" class="sibx" aria-label="Fechar">✕</button></div>${left?L.map(x=>tbox(x,'')).join('')+me:me+L.map(x=>tbox(x,'')).join('')}`;
-  bx.classList.add('sibsel');tin.appendChild(el);if(window.APP&&APP.media)APP.media(el);
-  // a própria pessoa fica exatamente no mesmo sítio; os irmãos abrem para o lado
-  {const pc=el.querySelector('.sibme .tb'),e0=el.getBoundingClientRect(),p0=pc.getBoundingClientRect();pc.style.width=r.width+'px';
-    el.style.left=(l-(p0.left-e0.left))+'px';el.style.top=(t-(p0.top-e0.top))+'px';el.style.visibility=''}
+  el.innerHTML=`<div class="sibhd">${esc(L.length&&L.every(x=>BY[x]?.s==='F')?'Irmãs':'Irmãos')} de ${esc(q.n)} (${L.length}) <button type="button" class="sibx" aria-label="Fechar">✕</button></div>${L.map(x=>tbox(x,'')).join('')}`;
+  const lk=document.createElement('div');lk.className='siblink';lk.style.cssText=`left:${left?l-G:rr}px;top:${t+r.height/2-1.5}px;width:${G}px`;
+  bx.classList.add('sibsel');tin.appendChild(el);tin.appendChild(lk);if(window.APP&&APP.media)APP.media(el);
+  // as caixas dos irmãos ficam à altura da caixa da pessoa, ao lado, ligadas a ela por um traço
+  {const f=el.querySelector('.tb'),ws=[...el.querySelectorAll('.tb')].reduce((a,x)=>a+x.getBoundingClientRect().width,0);el.style.width=Math.max(200,ws+(L.length-1)*8+14)+'px';  /* caixas com foto são mais largas: soma as larguras reais */const e0=el.getBoundingClientRect(),f0=f.getBoundingClientRect();
+    el.style.left=(left?l-G-e0.width:rr+G)+'px';el.style.top=(t-(f0.top-e0.top))+'px';el.style.visibility=''}
   {const tr=tin.parentElement,a=tr.getBoundingClientRect(),b=el.getBoundingClientRect();if(b.left<a.left+8)tr.scrollLeft-=a.left+8-b.left;else if(b.right>a.right-8)tr.scrollLeft+=b.right-a.right+8}
-  el.addEventListener('click',e=>{if(e.target.closest('.sibx')){el.remove();bx.classList.remove('sibsel');return}const g=e.target.closest('[data-go]');if(g){pick(BY[g.dataset.go]?.id);return}const a=e.target.closest('[data-anc]');if(a)stay(BY[a.dataset.anc].id)});
+  el.addEventListener('click',e=>{if(e.target.closest('.sibx')){el.remove();lk.remove();bx.classList.remove('sibsel');return}const g=e.target.closest('[data-go]');if(g){pick(BY[g.dataset.go]?.id);return}const a=e.target.closest('[data-anc]');if(a)stay(BY[a.dataset.anc].id)});
 }
 function renderTree(){
   // centro: o perfil ativo (a ficha aberta); a âncora só define o título, o âmbito e os parentescos
