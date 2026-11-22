@@ -487,7 +487,7 @@ function showSibs(id,tk,tin,stay,pick,kind){
   const yr=x=>{const z=BY[x]||{},F=z.f||[];for(const tp of [['Nascimento'],['Batizado','Batismo']]){const f=F.find(g=>tp.includes(g.tipo)&&/\d{4}/.test(g.data||''));if(f){const m=/(\d{1,2})\/(\d{1,2})\/(\d{4})|(\d{1,2})\/(\d{4})|(\d{4})/.exec(f.data);return m[3]?+m[3]*10000+m[2]*100+ +m[1]:m[5]?+m[5]*10000+m[4]*100:+m[6]*10000}}const m=/\d{4}/.exec(z.nb||'');return m?+m[0]*10000:99999999};
   const L=kind==='cj'?[...((tin._cjl||{})[tk]||[])]:kind==='as'?[...((tin._asl||{})[tk]||[])]:kind==='ds'?[...((tin._dsl||{})[tk]||[])].sort((a,b)=>yr(a)-yr(b)):[...(q.ir||[]).filter(kOk)].sort((a,b)=>yr(a)-yr(b));
   const old=tin.querySelector('.sibrow'),again=old&&old.dataset.tk===tk&&old.dataset.kind===kind;
-  tin.querySelectorAll('.sibrow').forEach(e=>e.remove());tin.querySelectorAll('.sibsel').forEach(e=>e.classList.remove('sibsel'));tin.querySelectorAll('.tmbtn.on').forEach(e=>e.classList.remove('on'));if(tin.style.paddingLeft||tin.style.paddingTop||tin.style.paddingBottom){tin.style.paddingLeft='';tin.style.paddingTop='';tin.style.paddingBottom='';tin._draw&&tin._draw()}
+  tin.querySelectorAll('.sibrow').forEach(e=>e.remove());tin.querySelectorAll('.sibsel').forEach(e=>e.classList.remove('sibsel'));tin.querySelectorAll('.tmbtn.on').forEach(e=>e.classList.remove('on'));if(tin.style.paddingLeft||tin.style.paddingTop||tin.style.paddingBottom){tin.style.paddingLeft=tin._padL?tin._padL+'px':'';tin.style.paddingTop='';tin.style.paddingBottom='';tin._draw&&tin._draw()}
   if(again||!L.length)return;
   // o próprio botão «irmãos» é a ligação: a faixa abre logo à esquerda dele, à altura da caixa da pessoa
   const el=document.createElement('div');el.className='sibrow';el.dataset.tk=tk;el.dataset.kind=kind;el.style.cssText='left:0;top:0;visibility:hidden';
@@ -507,7 +507,7 @@ function showSibs(id,tk,tin,stay,pick,kind){
   const O=tin.getBoundingClientRect(),rbx=(()=>{if(tk!=='r')return bx;let m=bx;tin.querySelectorAll('.tb').forEach(e=>{if(/^s\d+$/.test(e.dataset.tk||'')&&e.getBoundingClientRect().left<m.getBoundingClientRect().left)m=e});return m})(),   // a âncora com cônjuges à esquerda: a faixa abre à esquerda do mais afastado
     ref=()=>(kind==='cj'||bt.dataset.in==='1'?rbx:bt).getBoundingClientRect(),b0=ref();   // «outros cônjuges»: o botão está dentro da caixa, a faixa abre ao lado da caixa
   let bl=b0.left-O.left;const defic=rightSide?0:w0-(bl-GAP);
-  if(defic>0){tin.style.paddingLeft=Math.ceil(defic)+'px';tin._draw&&tin._draw();bl=(kind==='cj'||bt.dataset.in==='1'?rbx:tin.querySelector(`.tm-${kind}[data-tk="${tk}"]`)).getBoundingClientRect().left-O.left}   // sem espaço à esquerda: a árvore desloca-se para a direita, redesenha-se e volta a medir o botão
+  if(defic>0){tin.style.paddingLeft=Math.ceil(defic+(tin._padL||0))+'px';tin._draw&&tin._draw();bl=(kind==='cj'||bt.dataset.in==='1'?rbx:tin.querySelector(`.tm-${kind}[data-tk="${tk}"]`)).getBoundingClientRect().left-O.left}   // sem espaço à esquerda: a árvore desloca-se para a direita, redesenha-se e volta a medir o botão
   const w=w0;   // os irmãos ficam sempre lado a lado, numa só linha
   el.style.width=w+'px';
   const e0=el.getBoundingClientRect(),f0=f.getBoundingClientRect(),r=bx.getBoundingClientRect(),O2=tin.getBoundingClientRect();
@@ -515,7 +515,7 @@ function showSibs(id,tk,tin,stay,pick,kind){
   {const t0=parseFloat(el.style.top);if(t0<4){const dl=Math.ceil(4-t0);tin.style.paddingTop=(parseFloat(getComputedStyle(tin).paddingTop)+dl)+'px';tin._draw&&tin._draw();el.style.top=(t0+dl)+'px'}}   // o cabeçalho da faixa não pode ficar por cima do topo da árvore
   {const tr=tin.parentElement,a=tr.getBoundingClientRect(),b=el.getBoundingClientRect();if(b.left<a.left+8)tr.scrollLeft-=a.left+8-b.left;else if(b.right>a.right-8)tr.scrollLeft+=b.right-a.right+8}
   }
-  el.addEventListener('click',e=>{if(e.target.closest('.sibx')){el.remove();tin.querySelectorAll('.sibsel').forEach(z=>z.classList.remove('sibsel'));tin.querySelectorAll('.tmbtn.on').forEach(z=>z.classList.remove('on'));if(tin.style.paddingLeft||tin.style.paddingTop||tin.style.paddingBottom){tin.style.paddingLeft='';tin.style.paddingTop='';tin.style.paddingBottom='';tin._draw&&tin._draw()}return}const g=e.target.closest('[data-go]');if(g){pick(BY[g.dataset.go]?.id);return}const a=e.target.closest('[data-anc]');if(a)stay(BY[a.dataset.anc].id)});
+  el.addEventListener('click',e=>{if(e.target.closest('.sibx')){el.remove();tin.querySelectorAll('.sibsel').forEach(z=>z.classList.remove('sibsel'));tin.querySelectorAll('.tmbtn.on').forEach(z=>z.classList.remove('on'));if(tin.style.paddingLeft||tin.style.paddingTop||tin.style.paddingBottom){tin.style.paddingLeft=tin._padL?tin._padL+'px':'';tin.style.paddingTop='';tin.style.paddingBottom='';tin._draw&&tin._draw()}return}const g=e.target.closest('[data-go]');if(g){pick(BY[g.dataset.go]?.id);return}const a=e.target.closest('[data-anc]');if(a)stay(BY[a.dataset.anc].id)});
 }
 function renderTree(){
   // centro: o perfil ativo (a ficha aberta); a âncora só define o título, o âmbito e os parentescos
@@ -621,12 +621,15 @@ function renderTree(){
   if(TREE_LAST_A!==null&&TREE_LAST_A!==A&&rb)requestAnimationFrame(()=>rb.scrollIntoView({block:'center',inline:'center',behavior:'smooth'}));
   TREE_LAST_A=A;
 }
-function layBands(tin){
-  for(const b of tin._bands||[]){const el=tin.querySelector(`.tband[data-band="${b.id}"]`);if(!el)continue;const E=el.getBoundingClientRect();let H=0,right=-1e9;
+function layBands(tin,again){again=again||0;
+  let need=0;
+  for(const b of tin._bands||[]){const el=tin.querySelector(`.tband[data-band="${b.id}"]`);if(!el)continue;el.style.marginLeft=tin._padL&&!tin.querySelector('.sibrow')?-tin._padL+'px':'';const E=el.getBoundingClientRect();let H=0,right=-1e9;
     const G=b.groups.map(g=>{const f=tin.querySelector(`[data-tk="${g.fromTk}"]`),fr=f&&f.getBoundingClientRect(),bx=g.ids.map(y=>el.querySelector(`[data-tk="x_${y}"]`)).filter(Boolean),ws=bx.map(e=>e.offsetWidth);
-      return {cx:fr?(fr.left+fr.right)/2-E.left:E.width/2,bx,ws,w:ws.reduce((a,x)=>a+x,0)+Math.max(0,bx.length-1)*16}}).sort((a,c)=>a.cx-c.cx);
-    for(const g of G){const l=Math.max(g.cx-g.w/2,right+24,4);let x=l;g.bx.forEach((e,i)=>{e.style.left=x+'px';e.style.top='30px';x+=g.ws[i]+16;H=Math.max(H,e.offsetHeight)});right=l+g.w}
+      return {cx:fr?(fr.left+fr.right)/2-E.left:E.width/2,off:g.kind==='as'&&bx.length===2?ws[0]+8:null,bx,ws,w:ws.reduce((a,x)=>a+x,0)+Math.max(0,bx.length-1)*16}}).sort((a,c)=>a.cx-c.cx);
+    if(G.length)need=Math.max(need,4-(G[0].cx-(G[0].off??G[0].w/2)));   // o grupo centrado sobre quem o pediu não cabe à esquerda: a árvore desloca-se para a direita
+    for(const g of G){const l=Math.max(g.cx-(g.off??g.w/2),right+24,4);let x=l;g.bx.forEach((e,i)=>{e.style.left=x+'px';e.style.top='30px';x+=g.ws[i]+16;H=Math.max(H,e.offsetHeight)});right=l+g.w}
     el.style.height=(H+60)+'px'}
+  if(need>.5&&again<4){tin._padL=(tin._padL||0)+Math.ceil(need);if(!tin.querySelector('.sibrow'))tin.style.paddingLeft=tin._padL+'px';layBands(tin,again+1)}
 }
 function treeLines(tin,rows,nsp,fl,upMore,dnMore,sibs,fg,cjb,insb,asb,dsb){
   const svg=tin.querySelector('#tsvg');if(!svg||!tin.isConnected)return;
@@ -643,6 +646,13 @@ function treeLines(tin,rows,nsp,fl,upMore,dnMore,sibs,fg,cjb,insb,asb,dsb){
     for(const p of ps)P.push(`M${p.cx},${p.b}V${y}`);
     P.push(`M${Math.min(...xs)},${y}H${Math.max(...xs)}`,`M${ch.cx},${y}V${ch.t}`)};
   rows.forEach((r,k)=>{for(let j=0;j<r.length;j+=2){const ch=R(k?`a${k-1}_${j>>1}`:'r');fam([R(`a${k}_${j}`),R(`a${k}_${j+1}`)],ch)}});
+  // um só filho (ou neto) de um casal: fica centrado por baixo do meio do casal (Tiago, 22/11)
+  tin.querySelectorAll('[data-ctr]').forEach(e=>{e.style.transform='';e.removeAttribute('data-ctr')});
+  {const sh=(el,dx)=>{if(el&&Math.abs(dx)>.5){el.style.transform=`translateX(${dx}px)`;el.setAttribute('data-ctr','1')}},rt0=R('r');
+    if(rt0&&fl.length)for(const g of [...new Set(fg||[])]){const ix=fl.map((c,i)=>fg[i]===g?i:-1).filter(i=>i>=0);if(ix.length!==1)continue;const k=R(`c${ix[0]}`);if(!k)continue;
+      let x0=rt0.cx;if(g){const sp=R(g),n=+g.slice(1),inn=n<2?rt0:R(`s${n-2}`);if(sp&&inn){const dir=sp.cx>inn.cx;x0=((dir?inn.r:sp.r)+(dir?sp.l:inn.l))/2}}
+      sh(k.el.closest('.tunit'),x0-k.cx)}
+    fl.forEach(([ns,ng,lf],i)=>{if(ng!==1)return;const ck=R(`c${i}`),g=R(`g${i}_0`),s0=ns?R(`c${i}s0`):null;if(!ck||!g)return;sh(g.el,(s0?(lf?(s0.r+ck.l)/2:(ck.r+s0.l)/2):ck.cx)-g.cx)})}
   // casamento da âncora: traço entre os cônjuges
   const rt=R('r');
   for(let i=0;i<nsp;i++){const s=R(`s${i}`),inn=i<2?rt:R(`s${i-2}`);if(s&&inn)C.push(i%2?`M${s.r},${my(s,inn)}H${inn.l}`:`M${inn.r},${my(s,inn)}H${s.l}`)}   // cônjuges de um lado e do outro da âncora (1.º à direita, 2.º à esquerda…), ligados a ela
