@@ -491,7 +491,7 @@ function showSibs(id,tk,tin,stay,pick,kind){
   if(again||!L.length)return;
   // o próprio botão «irmãos» é a ligação: a faixa abre logo à esquerda dele, à altura da caixa da pessoa
   const el=document.createElement('div');el.className='sibrow';el.dataset.tk=tk;el.dataset.kind=kind;el.style.cssText='left:0;top:0;visibility:hidden';
-  el.innerHTML=`<div class="sibhd"><span>${kind==='as'?'Ascendentes':kind==='ds'?'Descendentes':kind==='cj'?((tin._cjo||{})[tk]?'Outros cônjuges':'Cônjuges'):esc(L.length&&L.every(x=>BY[x]?.s==='F')?'Irmãs':'Irmãos')} de ${esc(q.n)} (${L.length})</span><button type="button" class="sibx" aria-label="Fechar">✕</button></div><div class="sibcols">${L.map(x=>tbox(x,'')).join('')}</div>`;
+  el.innerHTML=`<div class="sibhd"><span>${kind==='as'?'Ascendentes':kind==='ds'?((tin._dso||{})[tk]?'Outros descendentes':'Descendentes'):kind==='cj'?((tin._cjo||{})[tk]?'Outros cônjuges':'Cônjuges'):esc(L.length&&L.every(x=>BY[x]?.s==='F')?'Irmãs':'Irmãos')} de ${esc(q.n)} (${L.length})</span><button type="button" class="sibx" aria-label="Fechar">✕</button></div><div class="sibcols">${L.map(x=>tbox(x,'')).join('')}</div>`;
   bx.classList.add('sibsel');bt.classList.add('on');tin.appendChild(el);if(window.APP&&APP.media)APP.media(el);
   const f=el.querySelector('.tb'),PAD=14,GAP=6,w0=Math.max(200,[...el.querySelectorAll('.sibcols .tb')].reduce((a,x)=>a+x.getBoundingClientRect().width,0)+(L.length-1)*8+PAD);   // soma das larguras reais (as caixas com foto são mais largas)
   if(kind==='as'||kind==='ds'){   // as faixas dos ascendentes/descendentes abrem por cima/por baixo do botão
@@ -570,7 +570,7 @@ function renderTree(){
   rows.forEach((r,k)=>r.forEach((x,j)=>addcj(`a${k}_${j}`,x,'r')));sps.forEach((x,i)=>addcj(`s${i}`,x,i%2?'l':'r'));
   fl.forEach((c,i)=>{kCj(c).forEach((x,j)=>addcj(`c${i}s${j}`,x,'r'));kFl(c).forEach((g,j)=>addcj(`g${i}_${j}`,g,'r'))});
   // «descendentes»: filhos de quem está na árvore que a árvore não mostra (antepassados, cônjuges, cônjuges dos filhos e netos)
-  const dsb=[],dsl={};{const addds=(tk,x)=>{if(x===null||x===undefined)return;const D2=kFl(x).filter(y=>!shown.has(y));if(D2.length){dsl[tk]=D2;dsb.push([tk,x])}};
+  const dsb=[],dsl={},dso={};{const addds=(tk,x)=>{if(x===null||x===undefined)return;const D2=kFl(x).filter(y=>!shown.has(y));if(D2.length){dsl[tk]=D2;dso[tk]=kFl(x).some(y=>shown.has(y));dsb.push([tk,x,dso[tk]])}};   // «outros descendentes» se já se mostra algum filho da pessoa (Tiago, 22/11)
     rows.forEach((r,k)=>r.forEach((x,j)=>addds(`a${k}_${j}`,x)));sps.forEach((x,i)=>addds(`s${i}`,x));fl.forEach((c,i)=>{kCj(c).forEach((x,j)=>addds(`c${i}s${j}`,x));kFl(c).forEach((g,j)=>addds(`g${i}_${j}`,g))})}
   // botões dentro das caixas (irmãos, cônjuges, descendentes), um por baixo do outro, por baixo do «ancorar aqui» (Tiago, 22/11)
   const slots={};sibs.forEach(z=>(slots[z[0]]=slots[z[0]]||[]).push('sib'));cjb.forEach(z=>(slots[z[0]]=slots[z[0]]||[]).push('cj'));
@@ -582,7 +582,7 @@ function renderTree(){
   const asb=[],asl={};const addas=(tk,x)=>{if(x===null||x===undefined)return;const P2=kPa(x);if(P2.length){asl[tk]=P2;asb.push([tk,x])}};
   sps.forEach((x,i)=>addas(`s${i}`,x));fl.forEach((c,i)=>kCj(c).forEach((x,j)=>addas(`c${i}s${j}`,x)));
   upMore.forEach(tk=>{const m=/^a(\d+)_(\d+)$/.exec(tk);if(m)addas(tk,rows[+m[1]][+m[2]])});   // ascendentes dos antepassados de topo
-  tin._cjl=cjl;tin._cjo=cjo;tin._asl=asl;tin._dsl=dsl;
+  tin._cjl=cjl;tin._cjo=cjo;tin._asl=asl;tin._dsl=dsl;tin._dso=dso;
   draw();
   if(TREE_RO)TREE_RO.disconnect();
   if(window.ResizeObserver){TREE_RO=new ResizeObserver(draw);TREE_RO.observe(tin)}
@@ -624,7 +624,7 @@ function treeLines(tin,rows,nsp,fl,upMore,dnMore,sibs,fg,cjb,insb,asb,dsb){
     const lft=tk==='r'&&nsp>=2?R(`s${nsp%2?nsp-2:nsp-1}`):null;void lft;
     BT.push(`<button type="button" class="tmbtn tm-sib" data-act="sib" data-tk="${tk}" data-in="1" data-side="${sd||'l'}" style="${sd==='r'?`left:${b.r-7}px;transform:translateX(-100%)`:`transform:none;left:${b.l+7}px`};top:${b.b-pos(tk,'sib')-2}px" title="Mostrar os irmãos">${sd==='r'?`${n} ▶`:`◀ ${n}`}</button>`)}
   for(const [tk,id,lab,side] of cjb||[]){const b=R(tk);if(!b)continue;BT.push(`<button type="button" class="tmbtn tm-cj" data-act="cj" data-tk="${tk}" data-side="${side}" style="left:${b.r-7}px;top:${b.b-pos(tk,'cj')-2}px;transform:translateX(-100%)" title="Mostrar os cônjuges">${lab}</button>`)}
-  for(const [tk,id] of dsb||[]){const b=R(tk);if(!b)continue;BT.push(`<button type="button" class="tmbtn tm-ds" data-act="ds" data-tk="${tk}" style="left:${b.cx}px;top:${b.b+8}px;transform:translateX(-50%)" title="Mostrar os descendentes">▼ descendentes</button>`)}
+  for(const [tk,id,ou] of dsb||[]){const b=R(tk);if(!b)continue;BT.push(`<button type="button" class="tmbtn tm-ds" data-act="ds" data-tk="${tk}" style="left:${b.cx}px;top:${b.b+8}px;transform:translateX(-50%)" title="Mostrar os ${ou?'outros ':''}descendentes">▼ ${ou?'outros ':''}descendentes</button>`)}
   for(const [tk,id] of asb||[]){const b=R(tk);if(!b)continue;BT.push(`<button type="button" class="tmbtn tm-as" data-act="as" data-tk="${tk}" style="left:${b.cx}px;top:${b.t-26}px;transform:translateX(-50%)" title="Mostrar os ascendentes">▲ ascendentes</button>`)}
   svg.setAttribute('width',tin.scrollWidth);svg.setAttribute('height',tin.scrollHeight);
   svg.innerHTML=`<path d="${P.join('')}"/>`+(C.length?`<path class="cj" d="${C.join('')}"/>`:'')+'';
