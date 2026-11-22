@@ -602,13 +602,13 @@ function renderTree(){
   tin._bands=[...bands.values()];tin._xg=tin._bands.flatMap(b=>b.groups);
   tin._cjl=cjl;tin._cjo=cjo;tin._asl=asl;tin._dsl=dsl;tin._dso=dso;
   // caminho mais curto da âncora até à pessoa base (Tiago, 22/11): as linhas da árvore nesse caminho ficam a vermelho; onde o caminho sai da árvore, o botão fica a vermelho; nos empates ficam todos
-  tin._path=null;tin._red=[];if(EGO!==A&&BY[EGO]){const has=new Set([...sibs.map(z=>z[0]+'|sib'),...cjb.map(z=>z[0]+'|cj'),...dsb.map(z=>z[0]+'|ds'),...asb.map(z=>z[0]+'|as')]);
+  tin._path=null;if(EGO!==A&&BY[EGO]&&!shown.has(EGO)){const has=new Set([...sibs.map(z=>z[0]+'|sib'),...cjb.map(z=>z[0]+'|cj'),...dsb.map(z=>z[0]+'|ds'),...asb.map(z=>z[0]+'|as')]);
     const irm=x=>(BY[x]?.ir||[]).filter(kOk),nb=u=>[...kPa(u).map(v=>[v,'as']),...kFl(u).map(v=>[v,'ds']),...kCj(u).map(v=>[v,'cj']),...irm(u).map(v=>[v,'sib'])];   // v é pai/filho/cônjuge/irmão de u → botão de u
     const dist=src=>{const d=new Map([[src,0]]);let fr=[src];while(fr.length){const nx=[];for(const u of fr)for(const [v] of nb(u))if(!d.has(v)){d.set(v,d.get(u)+1);nx.push(v)}fr=nx}return d};
     const dA=dist(A),dE=dist(EGO),D=dA.get(EGO);
     if(D!==undefined){const hit=[];for(const u of shown){const tu=tkOf.get(u);if(!tu||dA.get(u)+dE.get(u)!==D)continue;
       for(const [v,kd] of nb(u)){if(dE.get(v)!==dE.get(u)-1||dA.get(v)!==dA.get(u)+1)continue;
-        if(shown.has(v)){const tv=tkOf.get(v);if(tv)tin._red.push([tu,tv,kd])}else if(has.has(tu+'|'+kd))hit.push({tk:tu,kind:kd,id:v})}}
+        if(!shown.has(v)&&has.has(tu+'|'+kd))hit.push({tk:tu,kind:kd,id:v})}}
       if(hit.length)tin._path=hit}}
   draw();
   if(TREE_RO)TREE_RO.disconnect();
@@ -657,10 +657,6 @@ function treeLines(tin,rows,nsp,fl,upMore,dnMore,sibs,fg,cjb,insb,asb,dsb){
     const s0=ns?R(`c${i}s0`):null,x0=s0?(ck.r+s0.l)/2:ck.cx,y0=s0?ck.cy:ck.b,y=Math.min(...gs.map(g=>g.t))-11,xs=gs.map(g=>g.cx).concat([x0]);
     P.push(`M${x0},${y0}V${y}`,`M${Math.min(...xs)},${y}H${Math.max(...xs)}`);for(const g of gs)P.push(`M${g.cx},${y}V${g.t}`)});
   // caminho até à pessoa base: troços a vermelho por cima das linhas normais
-  const RP=[];for(const [tu,tv,kd] of tin._red||[]){const u=R(tu),v=R(tv);if(!u||!v)continue;
-    if(kd==='as'||kd==='ds'){const [pa,ch]=kd==='as'?[v,u]:[u,v],y=ch.t-11;RP.push(`M${pa.cx},${pa.b}V${y}H${ch.cx}V${ch.t}`)}
-    else if(kd==='cj'){const [a,b]=u.cx<v.cx?[u,v]:[v,u],y=(a.cy+b.cy)/2;RP.push(`M${a.r},${y}H${b.l}`)}
-    else{const y=Math.min(u.t,v.t)-11;RP.push(`M${u.cx},${u.t}V${y}H${v.cx}V${v.t}`)}}
   // níveis expandidos: pais por cima / filhos por baixo da pessoa
   for(const g of tin._xg||[]){const f=R(g.fromTk);if(!f)continue;if(g.kind==='as')fam(g.ids.map(y=>R('x_'+y)),f);else g.ids.forEach(y=>fam([f],R('x_'+y)))}
   const BT=[];
@@ -672,7 +668,7 @@ function treeLines(tin,rows,nsp,fl,upMore,dnMore,sibs,fg,cjb,insb,asb,dsb){
   for(const [tk,id,ou,ex,on] of dsb||[]){const b=R(tk);if(!b)continue;BT.push(`<button type="button" class="tmbtn tm-ds${on?' xpd':''}" data-act="ds" data-tk="${tk}"${ex?' data-xp="1"':''} style="left:${b.cx}px;top:${b.b+8}px;transform:translateX(-50%)" title="${ex?(on?'Recolher este nível':'Mostrar mais um nível só deste ramo'):'Mostrar os outros descendentes'}">▼ ${ou?'outros ':''}descendentes</button>`)}
   for(const [tk,id,ex,on] of asb||[]){const b=R(tk);if(!b)continue;BT.push(`<button type="button" class="tmbtn tm-as${on?' xpd':''}" data-act="as" data-tk="${tk}" data-xp="1" style="left:${b.cx}px;top:${b.t-26}px;transform:translateX(-50%)" title="${on?'Recolher este nível':'Mostrar mais um nível só deste ramo'}">▲ ascendentes</button>`)}
   svg.setAttribute('width',tin.scrollWidth);svg.setAttribute('height',tin.scrollHeight);
-  svg.innerHTML=`<path d="${P.join('')}"/>`+(C.length?`<path class="cj" d="${C.join('')}"/>`:'')+(RP.length?`<path class="red" d="${RP.join('')}"/>`:'')+'';
+  svg.innerHTML=`<path d="${P.join('')}"/>`+(C.length?`<path class="cj" d="${C.join('')}"/>`:'')+'';
   tin.querySelectorAll('.tmbtn').forEach(e=>e.remove());tin.insertAdjacentHTML('beforeend',BT.join(''));
   {const o=tin.querySelector('.sibrow');if(o){const b=tin.querySelector(`.tm-${o.dataset.kind||'sib'}[data-tk="${o.dataset.tk}"]`);if(b)b.classList.add('on')}}
   for(const q of tin._path||[]){const b=tin.querySelector(`.tm-${q.kind}[data-tk="${q.tk}"]`);if(b&&!b.classList.contains('tm-path')){b.classList.add('tm-path');b.title+=' — caminho até à pessoa base'}}

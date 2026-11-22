@@ -121,7 +121,7 @@ details.sec > .body{display:flex;flex-direction:column;gap:8px;margin-top:8px}
 .tin{position:relative;width:max-content;min-width:100%;display:flex;flex-direction:column;align-items:center;gap:22px;padding:4px 0}
 .tin>svg{position:absolute;left:0;top:0;pointer-events:none;overflow:visible}
 .tin>svg path{fill:none;stroke:var(--muted);stroke-width:1.4;opacity:.75}
-.tin>svg path.cj{stroke:var(--accent);stroke-width:2;opacity:.9}.tmbtn.tm-base{position:static;font-size:12px;padding:4px 10px;margin-right:4px}.tin>svg path.red{stroke:var(--path);stroke-width:2.6;opacity:1}
+.tin>svg path.cj{stroke:var(--accent);stroke-width:2;opacity:.9}.tmbtn.tm-base{position:static;font-size:12px;padding:4px 10px;margin-right:4px}
 .tin.mup{padding-top:40px}.tin.mdn{padding-bottom:40px}
 .tin>svg path.more{stroke-dasharray:4 3;stroke:var(--accent);opacity:1}
 .tin>svg path.arw{fill:var(--accent);stroke:none;opacity:1}
