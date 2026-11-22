@@ -1,7 +1,7 @@
 // Só a "casca" da app fica em cache (para abrir depressa e offline). Os dados da árvore NUNCA passam por aqui:
 // vêm do Supabase (com sessão) e ficam em IndexedDB, apagado ao sair. Imagens assinadas também não são guardadas.
-const CACHE = 'arvore-v32';
-const SHELL = ['./', 'index.html', 'styles.css?v=19', 'app.css?v=11', 'arvore.js?v=29', 'app.js?v=10', 'config.js?v=9', 'manifest.json', 'icons/icon-192.png?v=2', 'icons/icon-180.png?v=2'];
+const CACHE = 'arvore-v33';
+const SHELL = ['./', 'index.html', 'styles.css?v=20', 'app.css?v=11', 'arvore.js?v=30', 'app.js?v=10', 'config.js?v=9', 'manifest.json', 'icons/icon-192.png?v=2', 'icons/icon-180.png?v=2'];
 self.addEventListener('install', e => e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)).then(() => self.skipWaiting())));
 self.addEventListener('activate', e => e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k !== CACHE).map(k => caches.delete(k)))).then(() => self.clients.claim())));
 self.addEventListener('fetch', e => {
