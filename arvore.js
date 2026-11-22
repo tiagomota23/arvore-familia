@@ -499,7 +499,7 @@ function showSibs(id,tk,tin,stay,pick,kind){
     let O1=tin.getBoundingClientRect(),bb=btn().getBoundingClientRect(),topY;
     if(kind==='as'){topY=bb.top-O1.top-GAP-h;
       if(topY<6){tin.style.paddingTop=Math.ceil(parseFloat(getComputedStyle(tin).paddingTop)+6-topY)+'px';tin._draw&&tin._draw();O1=tin.getBoundingClientRect();bb=btn().getBoundingClientRect();topY=bb.top-O1.top-GAP-h}}
-    else{topY=bx.getBoundingClientRect().bottom-O1.top+GAP;const falta=topY+h+6-O1.height;if(falta>0){tin.style.paddingBottom=Math.ceil(parseFloat(getComputedStyle(tin).paddingBottom)+falta)+'px';O1=tin.getBoundingClientRect()}}
+    else{topY=bb.bottom-O1.top+GAP;const falta=topY+h+6-O1.height;if(falta>0){tin.style.paddingBottom=Math.ceil(parseFloat(getComputedStyle(tin).paddingBottom)+falta)+'px';O1=tin.getBoundingClientRect()}}
     el.style.left=Math.max(0,bx.getBoundingClientRect().left-O1.left)+'px';el.style.top=topY+'px';el.style.visibility='';
     try{el.scrollIntoView({block:'nearest',inline:'nearest'})}catch(e){}
   }else{
@@ -556,7 +556,7 @@ function renderTree(){
   $('#main').querySelectorAll('[data-anc]').forEach(b=>b.onclick=()=>stay(BY[b.dataset.anc].id));
   const r2=$('#ancreset2');if(r2)r2.onclick=()=>stay(null);
   window.APP.media($('#main'));
-  // botões da árvore (artifact v145): irmãos, cônjuges, ascendentes e descendentes abrem faixas; não mudam o centro nem a âncora
+  // botões da árvore (artifact): irmãos, cônjuges, ascendentes e descendentes abrem faixas; não mudam o centro nem a âncora
   {const tin0=$('#tin');tin0.addEventListener('click',ev=>{const b=ev.target.closest('.tmbtn');if(!b)return;const m=/^(a|g)(\d+)_(\d+)$/.exec(b.dataset.tk)||[],act=b.dataset.act;let id=null;
     if(act==='ds'){const e=dsb.find(z=>z[0]===b.dataset.tk);if(e)showSibs(e[1],b.dataset.tk,tin0,stay,pick,'ds');return}
     else if(act==='sib'){const e=sibs.find(z=>z[0]===b.dataset.tk);if(e)showSibs(e[1],b.dataset.tk,tin0,stay,pick,'sib');return}
@@ -573,9 +573,10 @@ function renderTree(){
   const dsb=[],dsl={};{const addds=(tk,x)=>{if(x===null||x===undefined)return;const D2=kFl(x).filter(y=>!shown.has(y));if(D2.length){dsl[tk]=D2;dsb.push([tk,x])}};
     rows.forEach((r,k)=>r.forEach((x,j)=>addds(`a${k}_${j}`,x)));sps.forEach((x,i)=>addds(`s${i}`,x));fl.forEach((c,i)=>{kCj(c).forEach((x,j)=>addds(`c${i}s${j}`,x));kFl(c).forEach((g,j)=>addds(`g${i}_${j}`,g))})}
   // botões dentro das caixas (irmãos, cônjuges, descendentes), um por baixo do outro, por baixo do «ancorar aqui» (Tiago, 22/11)
-  const slots={};sibs.forEach(z=>(slots[z[0]]=slots[z[0]]||[]).push('sib'));cjb.forEach(z=>(slots[z[0]]=slots[z[0]]||[]).push('cj'));dsb.forEach(z=>(slots[z[0]]=slots[z[0]]||[]).push('ds'));
+  const slots={};sibs.forEach(z=>(slots[z[0]]=slots[z[0]]||[]).push('sib'));cjb.forEach(z=>(slots[z[0]]=slots[z[0]]||[]).push('cj'));
   const insb=slots;
   Object.keys(slots).forEach(tk=>{const e=document.querySelector(`#tin [data-tk="${tk}"]`);if(e)e.style.paddingBottom=(6+24*slots[tk].length)+'px'});
+  dsb.forEach(([tk])=>{const e=document.querySelector(`#tin [data-tk="${tk}"]`);if(e)e.style.marginBottom='28px'});   // espaço para o botão «descendentes», que fica por baixo da caixa
   const tin=$('#tin');tin._draw=()=>draw();const draw=()=>treeLines(tin,rows,sps.length,fl.map(c=>[kCj(c).length,kFl(c).length]),upMore,dnMore,sibs,fg,cjb,insb,asb,dsb);
   // «ascendentes» dos cônjuges (da âncora e dos filhos): os pais deles, se houver na árvore
   const asb=[],asl={};const addas=(tk,x)=>{if(x===null||x===undefined)return;const P2=kPa(x);if(P2.length){asl[tk]=P2;asb.push([tk,x])}};
@@ -623,7 +624,7 @@ function treeLines(tin,rows,nsp,fl,upMore,dnMore,sibs,fg,cjb,insb,asb,dsb){
     const lft=tk==='r'&&nsp>=2?R(`s${nsp%2?nsp-2:nsp-1}`):null;void lft;
     BT.push(`<button type="button" class="tmbtn tm-sib" data-act="sib" data-tk="${tk}" data-in="1" data-side="${sd||'l'}" style="${sd==='r'?`left:${b.r-7}px;transform:translateX(-100%)`:`transform:none;left:${b.l+7}px`};top:${b.b-pos(tk,'sib')-2}px" title="Mostrar os irmãos">${sd==='r'?`${n} ▶`:`◀ ${n}`}</button>`)}
   for(const [tk,id,lab,side] of cjb||[]){const b=R(tk);if(!b)continue;BT.push(`<button type="button" class="tmbtn tm-cj" data-act="cj" data-tk="${tk}" data-side="${side}" style="left:${b.r-7}px;top:${b.b-pos(tk,'cj')-2}px;transform:translateX(-100%)" title="Mostrar os cônjuges">${lab}</button>`)}
-  for(const [tk,id] of dsb||[]){const b=R(tk);if(!b)continue;BT.push(`<button type="button" class="tmbtn tm-ds" data-act="ds" data-tk="${tk}" data-in="1" style="left:${b.r-7}px;top:${b.b-pos(tk,'ds')-2}px;transform:translateX(-100%)" title="Mostrar os descendentes">▼ descendentes</button>`)}
+  for(const [tk,id] of dsb||[]){const b=R(tk);if(!b)continue;BT.push(`<button type="button" class="tmbtn tm-ds" data-act="ds" data-tk="${tk}" style="left:${b.cx}px;top:${b.b+8}px;transform:translateX(-50%)" title="Mostrar os descendentes">▼ descendentes</button>`)}
   for(const [tk,id] of asb||[]){const b=R(tk);if(!b)continue;BT.push(`<button type="button" class="tmbtn tm-as" data-act="as" data-tk="${tk}" style="left:${b.cx}px;top:${b.t-26}px;transform:translateX(-50%)" title="Mostrar os ascendentes">▲ ascendentes</button>`)}
   svg.setAttribute('width',tin.scrollWidth);svg.setAttribute('height',tin.scrollHeight);
   svg.innerHTML=`<path d="${P.join('')}"/>`+(C.length?`<path class="cj" d="${C.join('')}"/>`:'')+'';
