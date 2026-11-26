@@ -34,7 +34,8 @@ def familia(d):
     for p in d['pessoas']:
         if p['id'] not in vivos:
             continue
-        q = {k: p.get(k) for k in ('id', 'n', 's', 'nb', 'nm', 'gv', 'sn', 'np', 'npg', 'ns', 'pr', 'pt', 'g', 'ga', 'an', 'c', 'r', 'src', 'lk', 'flp')}
+        q = {k: p.get(k) for k in ('id', 'n', 's', 'nb', 'nm', 'gv', 'sn', 'np', 'npg', 'ns', 'pr', 'pt', 'g', 'ga', 'an', 'c', 'r', 'src', 'lk', 'flp', 'mh_id')}
+        q['cf'] = [{k: c.get(k) for k in ('f', 'p', 'a', 'b', 'g')} for c in p.get('cf') or []]   # «Confirmado por N assentos» (Arquiteto 26/11)
         q.update(e='', o='', cnt={}, cr={}, cri=[], q=[], ex=[], h=[], ni=[], fi=[], gd=[], ge='', im=[], del_=None, sl=0, nc=p.get('nc', False), cd=False, pc=False)
         q['del'] = q.pop('del_')
         q['nv'] = [{'v': x.get('v'), 't': x.get('t')} for x in p.get('nv') or []]
@@ -132,6 +133,19 @@ def main():
     a = ap.parse_args()
     site = a.arvore / 'site'
     d = json.loads((site / 'data.json').read_text())
+    # mh_id das pessoas novo:* já criadas no MH: o build grava-o em pessoas.jsonl mas não no data.json (Arquiteto 26/11)
+    pj = a.arvore / 'pessoas.jsonl'
+    if pj.exists():
+        mh = {}
+        for l in pj.open(encoding='utf-8'):
+            o_ = json.loads(l)
+            if o_.get('mh_id'):
+                mh[o_['id']] = o_['mh_id']
+        n_mh = 0
+        for p in d['pessoas']:
+            if p['id'] in mh and not p.get('mh_id'):
+                p['mh_id'] = mh[p['id']]; n_mh += 1
+        print(f'mh_id: {n_mh} pessoas novo:* com id real no MyHeritage')
     camadas = {'gestor': d, 'familia': familia(d)}
     out = RAIZ / 'export'
     out.mkdir(exist_ok=True)
